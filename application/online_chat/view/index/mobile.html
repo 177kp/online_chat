@@ -1,0 +1,362 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <title>test</title>
+    <script type="text/javascript" src="/static/js/vue.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/flex.js"></script>
+    <script src="/static/js/vue-router.js"></script>
+    <script src="/static/js/vuex.js"></script>
+    
+    <link rel="stylesheet" href="/static/css/mobile.css">
+</head>
+
+<body>
+
+    <div id="app">
+        <router-view></router-view>
+    </div>
+</body>
+    <script type="text/x-template" id="sessions">
+        <div>
+            <div class="list">
+                <ul class="sessions">
+                        <li v-for="(item,key) in $store.state.sessions" 
+                            @click="goto(item)" @touchend="">
+                            <div class="cols-2">
+                                <img class="avatar" :src="item.head_img">
+                            </div>
+                            <div class="cols-8 name-div" >
+                                    <p class="name">{{item.name}}</p>
+                                    <p class="last-msg" v-html="last_msg( item.lastMessage )"></p>
+                            </div>
+                            <span
+                                class="last-msg-time">{{ item.lastMessage != null ? $store.state.formatTime(item.lastMessage.ctime*1000,"h:m") : '' }}</span>
+                            <div style="clear:both;width:100%;"></div>
+                        </li>
+                </ul>
+            </div>
+            <div class="side-tab">
+                <router-link to="/">
+                    <div class="tab-session tab-active" >
+                        <img src="/static/img/session-g.png" /><br />
+                        <span style="color:#3CAF36">聊天</span>
+                    </div>
+                </router-link>
+                <router-link to="/contact">
+                    <div class="tab-contact" >
+                        <img src="/static/img/contact-b.png" /><br />
+                        <span>联系人</span>
+                    </div>
+                </router-link>
+            </div>
+        </div>
+        </script>
+        <script type="text/x-template" id="contacts">
+            <div>
+                <div class="list">
+                        <ul class="contacts">
+                            <li v-for="(item,key) in $store.state.contacts" @click="goto(item)">
+                                <div class="cols-2">
+                                    <img class="avatar" :src="item.head_img">
+                                </div>
+                                <div class="cols-8">
+                                    <span class="name">{{item.name}}</span>
+                                </div>
+                                <div style="clear:both"></div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="side-tab">
+                            <router-link to="/">
+                                <div class="tab-session tab-active" >
+                                    <img src="/static/img/session-b.png" /><br />
+                                    <span>聊天</span>
+                                </div>
+                            </router-link>
+                            <router-link to="/contact">
+                                <div class="tab-contact" >
+                                    <img src="/static/img/contact-g.png" /><br />
+                                    <span style="color:#3CAF36">联系人</span>
+                                </div>
+                            </router-link>
+                    </div>
+                </div>
+        </script>
+        <script type="text/x-template" id="main">
+                <div class="main" >
+                        <div class="chat-title">
+                            <img src="/static/img/goback.png" @click.stop="goBack" @touchend.stop="goBack" />
+                            <span>{{$store.state.session.name}}</span>
+                        </div>
+                        <div class="message" id="message" v-scroll-bottom="$store.state.session.messages"  >
+                            <ul >
+                                <li v-for="item in $store.state.session.messages" :class="item.uid == $store.state.user.uid ? 'self':''">
+                                    <p class="time">
+                                        <span>{{ $store.state.formatTime(item.ctime*1000,"h:m") }}</span>
+                                    </p>
+                                    <div>
+                                        <img class="avatar" :src="item.head_img" />
+                                        <div class="text">{{item.msg}}</div>
+                                    </div>
+                                </li>
+                            </ul>
+                            <div style="clear:both"></div>
+                        </div>
+                        <div class="text-content">
+                            <input name="msg" placeholder="请输入内容" @keyup.enter="sendMsg()"></input>
+                        </div>
+                    </div>
+        </script>
+<script>
+    const sessionsHtml=  Vue.component('my-component', {
+        template: '#sessions',
+        methods:{
+            'last_msg': function (message) {
+                if (message != null) {
+                    if (message.uid != this.$store.state.user.uid ) {
+                        return '[<span class="send-user">' + message.name + '</span>]：' + message.msg;
+                    } else {
+
+                        return message.msg;
+                    }
+                } else {
+                    return '';
+                }
+            },
+            goto(session){
+                store.state.session = session;
+                this.$router.push({"name":"main",params:{session}});
+            }
+        }
+    });
+    const contactsHtml= Vue.component('my-component', {
+        template: '#contacts',
+        methods:{
+            goto(contact){
+            
+                var sessions = store.state.sessions;
+                var contacts = store.state.contacts;
+                for (var i = 0; i < sessions.length; i++) {
+                    if (contact.session_type == sessions[i].session_type &&
+                        contact.to_id == sessions[i].to_id) {
+                        var session = sessions.splice(i, 1)[0];
+                        sessions.unshift(session);
+                        session = sessions[0];
+                        this.$router.push({"name":"main",params:{session}});
+                        return;
+                    }
+                }
+                sessions.unshift({
+                    session_type: contact.session_type,
+                    head_img: contact.head_img,
+                    lastMessage: null,
+                    messages: [],
+                    name: contact.name,
+                    to_id: contact.to_id,
+                    uid: store.state.user.uid
+                });
+                session = sessions[0];
+                this.$router.push({"name":"main",params:{session}});
+                $.get('/api.php/session/joinSession', {
+                    session_type:contact.session_type,
+                    to_id: contact.to_id
+                }, function (data) {});
+            }
+        }
+    });
+    const mainHtml= Vue.component('my-component', {
+        template: '#main',
+        methods:{
+            goBack(){
+                this.$router.push('/');
+            },
+            sendMsg(){
+                sendMsg();
+            }
+        },
+        directives: {
+            // 发送消息后滚动到底部
+            'scroll-bottom'() {
+                if (typeof this.vm != "undefined") {
+                    this.vm.$nextTick(() => {
+                        var elem = document.getElementById('message');
+                        var scrollTop = elem.scrollHeight - elem.clientHeight;
+                        elem.scrollTop = elem.scrollHeight - elem.clientHeight;
+                    });
+                }
+            }
+        },
+        beforeRouteEnter : (to, from, next) => {
+
+            store.state.session = to.params.session;
+            $.get('/api.php/message?to_id='+store.state.session['to_id']+'&session_type='+store.state.session['session_type'],function(data){
+                data = $.parseJSON(data);
+                data = data.data;
+                for( var i=0;i<data.length;i++ ){
+                    Vue.set(store.state.session.messages,store.state.session.messages.length,data[i]);
+                }
+            });
+            next();
+        }
+    });
+
+    var currentUser = <?php echo json_encode($user); ?>;
+    const routes = [
+        { path: '/', component: sessionsHtml ,name:'home'},
+        { path: '/contact', component: contactsHtml,name:'contact'},
+        { path: '/main', component: mainHtml ,name:'main'}
+        
+    ]
+    const router = new VueRouter({
+        routes // (缩写) 相当于 routes: routes
+    })
+    
+    var sessions = [];
+    const now = new Date();
+    
+    const store = new Vuex.Store({
+        state: {
+            contacts:[],
+            sessions:[],
+            user: {
+                uid: currentUser.uid,
+                name: currentUser.name,
+                head_img: currentUser.head_img
+            },
+            formatTime: function (number, format) {
+                console.log(number);
+                    var formateArr = ['Y', 'M', 'D', 'h', 'm', 's'];
+                    var returnArr = [];
+
+                    var date = new Date(number);
+                    returnArr.push(date.getFullYear());
+                    returnArr.push(formatNumber(date.getMonth() + 1));
+                    returnArr.push(formatNumber(date.getDate()));
+
+                    returnArr.push(formatNumber(date.getHours()));
+                    returnArr.push(formatNumber(date.getMinutes()));
+                    returnArr.push(formatNumber(date.getSeconds()));
+                    for (var i in returnArr) {
+                        format = format.replace(formateArr[i], returnArr[i]);
+                    }
+                    return format;
+            }
+                
+        }
+        
+    });
+    var vm = new Vue({
+        router,
+        store,
+        directives: {
+            // 发送消息后滚动到底部
+            'scroll-bottom'() {
+                if (typeof this.vm != "undefined") {
+                    this.vm.$nextTick(() => {
+                        var elem = document.getElementById('message');
+                        var scrollTop = elem.scrollHeight - elem.clientHeight;
+                        elem.scrollTop = elem.scrollHeight - elem.clientHeight;
+                    });
+                }
+            }
+        }
+    }).$mount('#app');
+
+    //数据转化  
+    function formatNumber(n) {
+        n = n.toString()
+        return n[1] ? n : '0' + n
+    }
+
+    function sendMsg() {
+        var message = $('input[name=msg]').val();
+        if (typeof store.state.session.session_type == 'undefined') {
+            alert('请选择聊天！');
+            return;
+        }
+        var msg = {
+            session_type: store.state.session.session_type,
+            to_id: store.state.session.to_id,
+            session_id,
+            msg_type: 1,
+            msg: message
+        }
+        var msg = JSON.stringify(msg);
+        socket.send(msg);
+        $('input[name=msg]').val('');
+    }
+    var session_id = "<?php echo $session_id;?>";
+    var socket = new WebSocket("<?php echo $ws;?>");
+    socket.onmessage = function (msg) {
+
+        data = $.parseJSON(msg.data);
+        data = data.msg;
+        var exist = 0;
+        for (var i = 0; i < store.state.sessions.length; i++) {
+
+            if (store.state.sessions[i].session_type != data.session_type) {
+                continue;
+            }
+            //
+            if (data.session_type == 0) {
+                if (
+                    (data.uid == store.state.sessions[i].uid && data.to_id == store.state.sessions[i].to_id) ||
+                    (data.uid == store.state.sessions[i].to_id && data.to_id == store.state.sessions[i].uid)
+                ) {
+                    Vue.set(store.state.sessions[i].messages, store.state.sessions[i].messages.length, data);
+                    store.state.sessions[i].lastMessage = data;
+                    exist = 1;
+                    break;
+                }
+            } else if (data.session_type == 1) {
+                if (data.to_id == store.state.sessions[i].to_id) {
+                    Vue.set(store.state.sessions[i].messages, store.state.sessions[i].messages.length, data);
+                    store.state.sessions[i].lastMessage = data;
+                    exist = 1;
+                    break;
+                }
+            }
+            if (store.state.sessions[i].session_type == data.session_type && (store.state.sessions[i].to_id == currentUser)) {
+                Vue.set(store.state.sessions[i].messages, store.state.sessions[i].messages.length, data);
+                store.state.sessions[i].lastMessage = data;
+                exist = 1;
+                break;
+            }
+        }
+        if (exist == 1) {
+            var session = store.state.sessions.splice(i, 1)[0];
+        } else {
+            var session = {
+                session_type: data.session_type,
+                head_img: data.head_img,
+                lastMessage: data,
+                messages: [data],
+                name: data.name,
+                to_id: data.uid,
+                uid: data.to_id
+            };
+            Vue.set(store.state.sessions, store.state.sessions.length, session);
+            session = store.state.sessions.pop();
+        }
+        console.log(session);
+        store.state.sessions.unshift(session);
+    }
+    $.get('/api.php/session', function (data) {
+        data = $.parseJSON(data);
+        for (var i = 0; i < data.data.length; i++) {
+            Vue.set(store.state.sessions, i, data.data[i]);
+        }
+    });
+    $.get('/api.php/session/getContacts', function (data) {
+        data = $.parseJSON(data);
+        for (var i = 0; i < data.data.length; i++) {
+            Vue.set(store.state.contacts, i, data.data[i]);
+        }
+    });
+
+</script>
+
+</html>

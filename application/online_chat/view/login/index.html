@@ -1,0 +1,20 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <title>test</title>
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+</head>
+<body>
+    <form method="GET" action="/index.php/chat/login/dologin">
+        <input type="input" name="app_uid" value="{$app_uid}" />
+        <input type="input" name="name" value="{$name}" />
+        <input type="hidden" name="head_img" value="{$head_img}" />
+        <input type="hidden" name="time" value="{$time}" />
+        <input type="hidden" name="sign" value="{$sign}" />
+        <img src="{$head_img}" style="width:100px;height:100px"/>
+        <button >登录</button>
+    </form>
+</body>
+</html>

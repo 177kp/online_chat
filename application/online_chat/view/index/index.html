@@ -1,0 +1,306 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <title>test</title>
+    <script type="text/javascript" src="/static/js/vue.js"></script>
+
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.slimscroll.min.js"></script>
+    <link rel="stylesheet" href="/static/css/index.css">
+</head>
+
+<body style="background:#f5f5f5 url('/static/img/bg.jpg') no-repeat center;background-size: cover;">
+    <div id="app">
+        <div class="sidebar">
+            <div class="card">
+                <header>
+                    <img class="avatar" width="40" height="40"  :src="user.head_img">
+                    <p class="name">{{user.name}}</p>
+                </header>
+                <footer>
+                    <input class="search" type="text" placeholder="搜索">
+                </footer>
+            </div>
+            <div class="side-tab">
+                <span class="tab-session tab-active" onclick="tabShow('session')">
+                    <img src="/static/img/session-g.png"/>
+                </span>
+                <span class="tab-contact" onclick="tabShow('contact')">
+                    <img src="/static/img/contact-w.png"/>
+                </span>
+            </div>
+            <div class="list">
+                <ul class="sessions">
+                    <li v-for="(item,key) in sessions" :class="sessionIndex == key ? 'active':''" @click="selectSession(key)">
+                        <img class="avatar"  :src="item.head_img"> 
+                        <div>
+                            <p class="name">{{item.name}}</p>
+                            <p class="last-msg" v-html="last_msg( item.lastMessage )"></p>
+                        </div>
+                        <span
+                            class="last-msg-time">{{ item.lastMessage != null ? formatTime(item.lastMessage.ctime*1000,"h:m") : '' }}</span>
+                    </li>
+                </ul>
+                <ul class="contacts">
+                        <li v-for="(item,key) in contacts" @click="joinSession(key)">
+                            <img :src="item.head_img" class="avatar"> 
+                            <div>
+                                <p class="name">{{item.name}}</p> 
+                            </div>
+                        </li>
+                </ul>
+            </div>
+        </div>
+        <div class="main">
+            <div class="chat-title">
+                {{session.name}}
+            </div>
+            <div class="message" id="message">
+                <ul v-if="session" style="height:380px" v-scroll-bottom="session.messages">
+                    <li v-for="item in session.messages">
+                        <p class="time">
+                            <span>{{formatTime(item.ctime*1000,"h:m")}}</span>
+                        </p>
+                        <div :class="item.uid == user.uid ? 'main self':'main'">
+                            <img class="avatar" width="30" height="30" :src="item.head_img" />
+                            <div class="text">{{item.msg}}</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="text-content">
+                <textarea name="msg" placeholder="请输入内容"></textarea>
+            </div>
+            <div class="text-send">
+                    <span class="text-send-tip">按下Ctrl+Enter换行</span><button onclick="sendMsg()">发送</button>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    var currentUser = <?php echo json_encode($user);?>;
+    var sessions = [];
+    const now = new Date();
+    var vm = new Vue({
+        el: '#app',
+        data: {
+            // 当前用户
+            user: {
+                uid: currentUser.uid,
+                name: currentUser.name,
+                head_img: currentUser.head_img
+            },
+            sessions: sessions,
+            sessionIndex:null,
+            session: [],
+            contacts:[
+                {
+                    
+                }
+            ] 
+        },
+        methods: {
+            formatTime: function (number, format) {
+                var formateArr = ['Y', 'M', 'D', 'h', 'm', 's'];
+                var returnArr = [];
+
+                var date = new Date(number);
+                returnArr.push(date.getFullYear());
+                returnArr.push(formatNumber(date.getMonth() + 1));
+                returnArr.push(formatNumber(date.getDate()));
+
+                returnArr.push(formatNumber(date.getHours()));
+                returnArr.push(formatNumber(date.getMinutes()));
+                returnArr.push(formatNumber(date.getSeconds()));
+
+                for (var i in returnArr) {
+                    format = format.replace(formateArr[i], returnArr[i]);
+                }
+                return format;
+            },
+            selectSession(key){
+                this.sessionIndex = key;
+                this.session = sessions[key];
+                $.get('/index.php/chat/message/index?to_id='+this.session['to_id']+'&session_type='+this.session['session_type'],function(data){
+                    data = $.parseJSON(data);
+                    data = data.data;
+                    for( var i=0;i<data.length;i++ ){
+                        Vue.set(vm.session.messages,vm.session.messages.length,data[i]);
+                    }
+                });
+            },
+            joinSession(contactIndex){
+                for( var i=0;i<this.sessions.length;i++ ){
+                    if( this.contacts[contactIndex].session_type == this.sessions[i].session_type &&
+                        this.contacts[contactIndex].to_id == this.sessions[i].to_id ){
+                            var session = this.sessions.splice(i, 1)[0]; 
+                            this.sessions.unshift(session);
+                            this.session = this.sessions[0];
+                            this.sessionIndex = 0;
+                            tabShow('session');
+                            return;
+                        }
+                }
+                
+                this.sessions.unshift({
+                    session_type: this.contacts[contactIndex].session_type,
+                    head_img:this.contacts[contactIndex].head_img,
+                    lastMessage:null,
+                    messages: [],
+                    name: this.contacts[contactIndex].name,
+                    to_id: this.contacts[contactIndex].to_id,
+                    uid: this.user.uid
+                });
+                this.session = this.sessions[0];
+                this.sessionIndex = 0;
+                tabShow('session');
+                $.get('/index.php/chat/session/joinSession',{
+                    session_type:this.contacts[contactIndex].session_type,
+                    to_id:this.contacts[contactIndex].to_id
+                },function(data){
+                });
+            },
+            'last_msg':function(message){
+                console.log(message);
+                if( message != null ){
+                    if( message.uid != this.user.uid ){
+                        return '[<span class="send-user">'+message.name+'</span>]：' + message.msg;
+                    }else{
+                        
+                        return message.msg;
+                    }
+                }else{
+                    return '';
+                }
+            }
+
+        },
+        directives: {
+            // 发送消息后滚动到底部
+            'scroll-bottom'() {
+                if (typeof this.vm != "undefined") {
+                    this.vm.$nextTick(() => {
+                        var elem = document.getElementById('message');
+                        var scrollTop = elem.scrollHeight - elem.clientHeight;
+                        $(elem).slimScroll({ scrollTo: scrollTop.toString() + 'px' });
+                        elem.scrollTop = elem.scrollHeight - elem.clientHeight;
+                    });
+                }
+            }
+        }
+    });
+
+    //数据转化  
+    function formatNumber(n) {
+        n = n.toString()
+        return n[1] ? n : '0' + n
+    }
+
+    $('.list').slimScroll({
+        height: '460px'
+    });
+    $('.message').slimScroll({
+        height: '390px'
+    });
+    function sendMsg(){
+        var message = $('textarea[name=msg]').val();
+        if( typeof vm.session.session_type == 'undefined' ){
+            alert('请选择聊天！');
+            return;
+        }
+        var msg = {
+            session_type:vm.session.session_type,
+            to_id:vm.session.to_id,
+            session_id,
+            msg_type:1,
+            msg:message
+        }
+        var msg = JSON.stringify(msg);
+        socket.send(msg); 
+        $('textarea[name=msg]').val('');
+    }
+    var session_id = "<?php echo $session_id;?>";
+    var socket = new WebSocket("<?php echo $ws;?>"); 
+    socket.onmessage = function(msg){
+        console.log(msg);
+        data = $.parseJSON(msg.data);
+        data = data.msg;
+        var exist = 0;
+        for( var i=0;i<vm.sessions.length;i++ ){
+            
+            if( vm.sessions[i].session_type != data.session_type ){
+                continue;
+            }
+            //
+            if( data.session_type == 0 ){
+                if( 
+                    ( data.uid == vm.sessions[i].uid && data.to_id == vm.sessions[i].to_id )
+                    || (data.uid == vm.sessions[i].to_id && data.to_id == vm.sessions[i].uid )
+                ){
+                    Vue.set(vm.sessions[i].messages,vm.sessions[i].messages.length,data);
+                    vm.sessions[i].lastMessage = data;
+                    exist = 1;
+                    break;
+                }
+            }else if( data.session_type == 1 ){
+                if( data.to_id == vm.sessions[i].to_id ){
+                    Vue.set(vm.sessions[i].messages,vm.sessions[i].messages.length,data);
+                    vm.sessions[i].lastMessage = data;
+                    exist = 1;
+                    break;
+                }
+            }
+            if( vm.sessions[i].session_type == data.session_type && (vm.sessions[i].to_id == currentUser) ){
+                Vue.set(vm.sessions[i].messages,vm.sessions[i].messages.length,data);
+                vm.sessions[i].lastMessage = data;
+                exist = 1;
+                break;
+            }
+        }
+        if( exist == 1 ){
+            var session = vm.sessions.splice(i,1)[0];
+        }else{
+            var session = {
+                session_type: data.session_type,
+                head_img:data.head_img,
+                lastMessage:data,
+                messages: [data],
+                name: data.name,
+                to_id:data.uid,
+                uid: data.to_id
+            };
+            Vue.set( vm.sessions,vm.sessions.length,session );
+            session = vm.sessions.pop();
+        }
+        vm.sessions.unshift(session);
+    }
+    $.get('/index.php/chat/session/index',function(data){
+        data = $.parseJSON(data);
+        for( var i=0;i<data.data.length;i++ ){
+            Vue.set(vm.sessions,i,data.data[i]);
+        }
+    });
+    $.get('/index.php/chat/session/getContacts',function(data){
+        data = $.parseJSON(data);
+        for( var i=0;i<data.data.length;i++ ){
+            Vue.set(vm.contacts,i,data.data[i]);
+        }
+    });
+    function tabShow(tab){
+        if( tab == 'session' ){
+            $('.sessions').show();
+            $('.contacts').hide();
+            $('.tab-session img').attr('src','/static/img/session-g.png');
+            $('.tab-contact img').attr('src','/static/img/contact-w.png');
+        }else if(tab == 'contact'){
+            $('.sessions').hide();
+            $('.contacts').show();
+            $('.tab-session img').attr('src','/static/img/session-w.png');
+            $('.tab-contact img').attr('src','/static/img/contact-g.png');
+        }
+    }
+</script>
+
+</html>
