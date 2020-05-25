@@ -35,7 +35,13 @@ allowCrossDomain();
 
 //online chat session作用域
 \think\facade\Hook::add('app_init',function(){
-    if( !empty($_SERVER['HTTP_TOKEN']) ){
+    //判断HTTP_TOKEN是否合法
+    if( !empty($_SERVER['HTTP_TOKEN']) && !preg_match('/^[\w]{20,40}$/',$_SERVER['HTTP_TOKEN']) ){
+        returnMsg(100,'HTTP_TOKEN不合法！');
+    }
+    //http的头字段有token，并且不为空，并且uri不是登陆地址，用token作为session_id;
+    if( !empty($_SERVER['HTTP_TOKEN']) && strtolower($_SERVER['HTTP_TOKEN']) != 'null' && !preg_match( '/\/online_chat\/chat\/doLogin$/',\think\facade\Request::url() ) ){
+        //使用token作为session_id,为了跨域；前端sdk里面传的token。
         \think\facade\Session::init([
             'prefix'         => 'online_chat',
             'type'           => '',
