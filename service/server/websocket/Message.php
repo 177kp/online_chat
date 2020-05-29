@@ -94,6 +94,9 @@ class Message{
     static function room($session,$Connection,$recvMsg){
         //var_dump($recvMsg);
         $msg = MessageModel::genMessage($session['uid'],Session::CHAT_TYPE_ROOM,$recvMsg['to_id'],$recvMsg['msg_type'],$recvMsg['msg']);
+        //加上发送消息人的头像和名称
+        $msg['msg']['head_img'] = $session['head_img'];
+        $msg['msg']['name'] = $session['name'];
         Publisher::instance()->publish($msg);
         if( isset(Room::$rooms[$recvMsg['to_id']]) ){
             //群消息广播
