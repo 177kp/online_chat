@@ -19,7 +19,7 @@ class ChatRoomApiTest extends TestCase{
             'rid'=>1,
             'uid'=>1
         ];
-        $res = ChatRoomApi::exit($get);
+        $res = ChatRoomApi::signOut($get);
         $res = json_decode($res,true);
         $this->assertEquals($res['code'],200);
         $this->assertTrue( !in_array( $get['uid'],Room::$rooms[$get['rid']] ) );

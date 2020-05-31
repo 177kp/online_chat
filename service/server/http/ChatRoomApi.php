@@ -22,7 +22,7 @@ class ChatRoomApi{
      * 退出聊天室，修改Room的数据
      * @param $get HTTP的get参数
      */
-    static function exit($get){
+    static function signOut($get){
         if( empty($get['rid']) ){
             return httpApiMsg(100,'rid不能为空！');
         }
