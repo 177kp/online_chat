@@ -184,7 +184,7 @@ $WebSocketServer->timer(function(){
             continue;
         }
         //用户和咨询师都不在线的情况，就暂停
-        if( !Session::isset($consult_time['uid']) || !Session::isset($consult_time['to_id']) ){
+        if( !Session::exist($consult_time['uid']) || !Session::exist($consult_time['to_id']) ){
             ConsultTime::$consult_times[$id]['status'] = 2;
             $msg = Message::genConsultTimeMessage($id);
             Publisher::instance()->publish($msg);

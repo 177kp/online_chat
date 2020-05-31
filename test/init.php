@@ -1,8 +1,13 @@
 <?php
 ini_set('log_errors','off');
-include __DIR__ . '/../../../topthink/framework/base.php';
+if( is_dir(__DIR__ . '/../vendor') ){
+    include __DIR__ . '/../vendor/topthink/framework/base.php';
+    define('APP_ROOT_DIR',realpath(__DIR__ . '/../'));
+}else{ //composer安装的方式
+    include __DIR__ . '/../../../topthink/framework/base.php';
+    define('APP_ROOT_DIR',realpath(__DIR__ . '/../../../../'));
+}
 
-define('APP_ROOT_DIR',realpath(__DIR__ . '/../../../../'));
 //echo APP_ROOT_DIR;exit;
 if( !empty(APP_ROOT_DIR) ){
     define('RUNTIME_DIR',APP_ROOT_DIR . '/runtime');

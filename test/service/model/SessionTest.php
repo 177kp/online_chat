@@ -84,17 +84,17 @@ class SessionTest extends TestCase{
         $tmp = 0;
         $to_id = 1;
         Session::add($access_token,$uid,$user_type,$name,$head_img,$sessions,$tmp,$to_id);
-        $this->assertTrue(Session::isset($uid,$tmp) );
+        $this->assertTrue(Session::exist($uid,$tmp) );
         Session::del($access_token,'access_token');
-        $this->assertFalse(Session::isset($uid,$tmp) );
+        $this->assertFalse(Session::exist($uid,$tmp) );
 
         $access_token = uniqid();
         $uid = mt_rand(1,10000);
         $tmp = 1;
         Session::add($access_token,$uid,$user_type,$name,$head_img,$sessions,$tmp,$to_id);
-        $this->assertTrue(Session::isset($uid,$tmp) );
+        $this->assertTrue(Session::exist($uid,$tmp) );
         Session::del($access_token,'access_token');
-        $this->assertFalse(Session::isset($uid,$tmp) );
+        $this->assertFalse(Session::exist($uid,$tmp) );
     }
     public function test_genAccessToken(){
         $access_token1 = Session::genAccessToken();

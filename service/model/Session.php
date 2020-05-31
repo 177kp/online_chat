@@ -222,7 +222,7 @@ class Session{
      * @param int $uid 用户ID
      * @param int $tmp 0-不是临时用户，1-临时用户
      */
-    static function isset($uid,$tmp=self::USER_NORMAL){
+    static function exist($uid,$tmp=self::USER_NORMAL){
         $key = $tmp . '-' . $uid;
         if( isset(self::$uidIndex[$key]) ){
             return true;
