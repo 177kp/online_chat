@@ -46,7 +46,7 @@ class Chat extends Controller{
         if( $_SERVER['REQUEST_SCHEME'] == 'http' ){
             $ws = 'ws://' . $_SERVER['SERVER_NAME'] . ':2080?access_token=' . $access_token;
         }else{
-            $ws = 'wss://' . $_SERVER['SERVER_NAME'] . ':2080?access_token=' . $access_token;
+            $ws = 'wss://' . $_SERVER['SERVER_NAME'] . '/online_chat_server:2080?access_token=' . $access_token;
         }
         returnMsg(200,'',[
             'userinfo'=>$user,
