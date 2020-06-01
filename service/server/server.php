@@ -59,7 +59,7 @@ $WebSocketServer->on('websocketMessage',function($Connection,$frame,$Exception){
         if( $Exception != null ){
             throw $Exception;
         }
-        \onlineChat\server\websocket\Message::callback($Connection,$frame);
+        \onlineChat\server\websocket\OnMessage::callback($Connection,$frame);
     }catch( \Exception $e ){
         //echo $e;
         ExceptionHandle::chatRenderException($e);

@@ -9,7 +9,7 @@ use onlineChat\lib\protocol\Websocket;
 use onlineChat\lib\websocketServer\ConnectionBase;
 use think\facade\Log;
 
-class Message{
+class OnMessage{
     /**
      * websocket消息回调
      * @param ConnectionBase $Connection
