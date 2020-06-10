@@ -25,7 +25,7 @@ class WebsocketServerApi{
             'action'=>'customer/getCustomerContacts'
         ];
         $res = self::httpGet($params);
-        return $resArr['data'];
+        return $res['data'];
     }
     static function roomJoin($uid,$rid){
         $params = [

@@ -2,3 +2,4 @@
 composer.lock
 /build
 /public/upload
+/public/online_chat_client

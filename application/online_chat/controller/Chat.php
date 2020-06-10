@@ -58,9 +58,8 @@ class Chat extends Controller{
      * 获取临时websocket访问的token
      */
     public function getTmpWebsocketAccessToken(){
-        session_start();
         $session_id = session_id();
-        session_write_close();
+        
         $user = db::table('chat_tmp_user')->field('uid')->where('session_id',$session_id)->find();
         if( empty($user) ){
             $uid = db::table('chat_tmp_user')->insertGetId([

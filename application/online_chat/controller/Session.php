@@ -112,6 +112,7 @@ class Session{
         returnMsg(200,'获取所有聊天会话成功！',$chats);
     }
     public function getContacts(){
+        isLogin();
         //exit;
         //var_dump(getUid());exit;
         $user_type = session('chat_user.user_type');

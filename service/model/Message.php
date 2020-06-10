@@ -177,7 +177,7 @@ class Message{
             'msg'=>[
                 'uid'=>$uid,
                 'chat_type'=>2,
-                'msg'=>'客户接入',
+                'msg'=>'客服接入',
                 'to_id'=>$to_id,
                 'msg_type'=>0,
                 'ctime'=>time()

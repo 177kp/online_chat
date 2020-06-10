@@ -24,7 +24,7 @@ return [
     ],
     //微信小程序配置
     'weixin_miniprogram'=>[
-        'appid'=>'',
-        'secret'=>''
+        'appid'=>'wxecf5b6067eb155ee',
+        'secret'=>'406012cbde482cf49b3959a1d030c999'
     ]
 ];
