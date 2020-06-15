@@ -125,8 +125,10 @@ class Message{
             'topic'=>'consult_not_start',
             'msg'=>[
                 'uid'=>$uid,
+                'chat_type'=>3,
                 'to_id'=>$to_id,
                 'msg'=>$msg,
+                'msg_type'=>0,
                 'ctime'=>time()
             ]
         ];

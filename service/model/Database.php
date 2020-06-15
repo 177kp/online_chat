@@ -166,4 +166,11 @@ class Database{
             $consult_time['id']
         ]);
     }
+    /**
+     * 暂停所有的咨询
+     */
+    public function suspend_all_consult(){
+        $sql = 'update chat_consult_time set status=2 where status=1';
+        $this->getDbConn()->query($sql);
+    }
 }

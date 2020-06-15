@@ -41,6 +41,10 @@ class ConsultTimeApi{
             return httpApiMsg(100,'consult_time[delayed_num]参数不存在！');
         }
         ConsultTimeModel::join($get['consult_time']);
+        $msg = Message::genConsultTimeMessage($get['consult_time']['id']);
+        Publisher::instance()->publish($msg);
+        Session::writeFrameByUid($get['consult_time']['uid'],Session::USER_NORMAL,$msg);
+        Session::writeFrameByUid($get['consult_time']['to_id'],Session::USER_NORMAL,$msg);
         return httpApiMsg(200,'开启计时成功！');
     }
     /**

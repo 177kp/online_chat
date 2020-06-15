@@ -107,6 +107,9 @@ class OnMessage{
     }
     static function Customer($session,$Connection,$recvMsg){
         $msg = MessageModel::genMessage($session['uid'],Session::CHAT_TYPE_CUSTOMER,$recvMsg['to_id'],$recvMsg['msg_type'],$recvMsg['msg']);
+        //加上发送消息人的头像和名称
+        $msg['msg']['head_img'] = $session['head_img'];
+        $msg['msg']['name'] = $session['name'];
         Publisher::instance()->publish($msg);
         //推送通知给自己
         Session::writeFrameByUid($session['uid'],$session['tmp'],$msg);
@@ -148,13 +151,16 @@ class OnMessage{
         }
         //咨询消息
         $msg = MessageModel::genMessage($session['uid'],3,$recvMsg['to_id'],$recvMsg['msg_type'],$recvMsg['msg']);
+        //加上发送消息人的头像和名称
+        $msg['msg']['head_img'] = $session['head_img'];
+        $msg['msg']['name'] = $session['name'];
         Publisher::instance()->publish($msg);
         //echo $msg . PHP_EOL;
         //推送通知给自己
         Session::writeFrameByUid($session['uid'],$session['tmp'],$msg);
         //推送通知给聊天的人
         if( $recvMsg['to_id'] != '' ){
-            safe_dump($recvMsg);
+            //safe_dump($recvMsg);
             Session::writeFrameByUid($recvMsg['to_id'],Session::USER_NORMAL,$msg);
         }
     }

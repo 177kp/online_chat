@@ -23,6 +23,7 @@ if( Database::instance()->getDbConn() == null ){
 }
 //初始化聊天室数据
 Room::initData();
+Database::instance()->suspend_all_consult();
 //关闭数据库连接
 Database::instance()->closeDbConn();
 /**

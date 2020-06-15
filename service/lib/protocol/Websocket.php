@@ -78,7 +78,15 @@ class Websocket{
             $info = \explode(':',$item);
             $request[trim($info[0])] = trim($info[1]);
         }
-        if( !isset($request['Connection']) || ucfirst($request['Connection']) != 'Upgrade' ){
+        
+        if( !isset($request['Connection']) ){
+            throw new \Exception('Connection字段不存在！');
+        }
+        $headerConnection = explode(',',$request['Connection']);
+        foreach( $headerConnection as $k=>$v ){
+            $headerConnection[$k] = ucfirst( trim($v) );
+        }
+        if( !in_array('Upgrade',$headerConnection) ){
             throw new \Exception('Connection字段不正确！');
         }
         if( !isset($request['Upgrade']) || $request['Upgrade'] != 'websocket' ){

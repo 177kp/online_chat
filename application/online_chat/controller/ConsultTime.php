@@ -97,6 +97,16 @@ class ConsultTime extends Controller{
             'soft_delete'=>0
         ]);
         $consult_time = db::table('chat_consult_time')->where('id',$id)->find();
+        $chatSession = db::table('chat_session')->where('uid',$_POST['to_id'])->where('to_id',$uid)->where('chat_type=3')->find();
+        if( empty($chatSession) ){
+            db::table('chat_session')->insert([
+                'uid'=>$_POST['to_id'],
+                'to_id'=>$uid,
+                'chat_type'=>3,
+                'last_time'=>0,
+                'soft_delete'=>0
+            ]);
+        }
         returnMsg(200,'',[
             'consult_time'=>$consult_time
         ]);
@@ -130,6 +140,16 @@ class ConsultTime extends Controller{
         ]);
 
         $consult_time = db::table('chat_consult_time')->where('id',$id)->find();
+        $chatSession = db::table('chat_session')->where('uid',$_POST['to_id'])->where('to_id',$uid)->where('chat_type=3')->find();
+        if( empty($chatSession) ){
+            db::table('chat_session')->insert([
+                'uid'=>$_POST['to_id'],
+                'to_id'=>$uid,
+                'chat_type'=>3,
+                'last_time'=>0,
+                'soft_delete'=>0
+            ]);
+        }
         returnMsg(200,'',[
             'consult_time'=>$consult_time
         ]);
@@ -211,6 +231,7 @@ class ConsultTime extends Controller{
         }
         $consult_time['status'] = '1';
         WebsocketServerApi::startConsult($consult_time);
+        session('start_consult_time',time());
         returnMsg(200,'开启咨询成功！');
 
     }
@@ -220,6 +241,9 @@ class ConsultTime extends Controller{
     public function suspendConsult(){
         if( empty($_POST['consult_time_id']) ){
             returnMsg(100,'consult_time_id参数不能为空！');
+        }
+        if( time() - session('start_consult_time') < 3 ){
+            returnMsg(100,'你操作太频繁，请稍后操作！');
         }
         $uid =  session('chat_user.uid');
         $consult_time = db::table('chat_consult_time')->where('id',$_POST['consult_time_id'])->where('uid',$uid)->find();
