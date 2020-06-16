@@ -105,6 +105,7 @@ class File extends Controller{
         if( strstr($_GET['path'],'..') !== false ){
             returnMsg(100,'path不正确！');
         }
+        $_GET['path'] = str_replace(Request::domain(),'',$_GET['path']);
         if( !preg_match('/^\/upload\/file\//',$_GET['path']) ){
             returnMsg(100,'path不正确！');
         }
