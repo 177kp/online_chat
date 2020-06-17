@@ -217,17 +217,20 @@ $WebSocketServer->timer(function(){
 //心跳
 $WebSocketServer->timer(function(){
     $count = count(Session::$sessions);
-    $uids = [];
+    $users = [];
     foreach( Session::$sessions as $session ){
-        $uids[] = $session['uid'];
-        if( count($uids) >= 50 ){
-            $msg = Message::genHeartBeatMessage($uids);
+        $users[] = [
+            'uid'=>$session['uid'],
+            'tmp'=>$session['tmp']
+        ];
+        if( count($users) >= 50 ){
+            $msg = Message::genHeartBeatMessage($users);
             Publisher::instance()->publish($msg);
-            $uids = [];
+            $users = [];
         }
     }
-    if( count($uids) > 0 ){
-        $msg = Message::genHeartBeatMessage($uids);
+    if( count($users) > 0 ){
+        $msg = Message::genHeartBeatMessage($users);
         Publisher::instance()->publish($msg);
     }
 },30);

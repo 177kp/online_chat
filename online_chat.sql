@@ -160,6 +160,11 @@ CREATE TABLE IF NOT EXISTS `chat_user` (
   UNIQUE KEY `app_uid` (`soft_delete`,`app_uid`,`user_type`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='用户表' AUTO_INCREMENT=10003 ;
 
+CREATE DEFINER=`root`@`localhost` EVENT `updateUserOnline` ON SCHEDULE EVERY 1 MINUTE STARTS '2020-06-17 20:13:45' ON COMPLETION NOT PRESERVE ENABLE DO begin
+  update chat_user set online=0 where online=1 and last_heartbeat_time<unix_timestamp()-30;
+  update chat_tmp_user set online=0 where online=1 and last_heartbeat_time<unix_timestamp()-30;
+end;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

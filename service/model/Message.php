@@ -91,12 +91,20 @@ class Message{
     }
     /**
      * 生成心跳信息
+     * @param array $users
+     * [
+     *    [
+     *        uid=>用户id,
+     *        tmp=>是否是临时用户      
+     *    ],
+     *    ...
+     * ]
      */
-    static function genHeartBeatMessage($uids){
+    static function genHeartBeatMessage($users){
         return [
             'topic'=>'heartBeat',
             'msg'=>[
-                'uids'=>$uids,
+                'users'=>$users,
                 'ctime'=>time()
             ]
         ];

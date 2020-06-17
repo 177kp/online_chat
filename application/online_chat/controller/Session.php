@@ -158,12 +158,14 @@ class Session{
             if( empty($user) ){
                 returnMsg(100,'to_id不正确！');
             }
+            $online = $user['online'];
         }elseif( $_GET['chat_type'] == '1' ){
             $room = db::table('chat_room')->where('rid',$_GET['to_id'])->find();
             if( empty($room) ){
                 returnMsg(100,'to_id不正确！');
             }
             WebsocketServerApi::roomJoin(getUid(),$room['rid']);
+            $online = '';
         }elseif( $_GET['chat_type'] == '2' ){
             $user = db::table('chat_tmp_user')->where('uid',$_GET['to_id'])->find();
             if( empty($user) ){
@@ -174,12 +176,15 @@ class Session{
             $sql = 'insert ignore into chat_session(sid,uid,to_id,chat_type,last_time)
                         values(null,?,?,?,unix_timestamp());';
             db::query($sql,[$_GET['to_id'],getUid(),$_GET['chat_type']]);
+            $online = $user['online'];
         }
         $sql = 'insert ignore into chat_session(sid,uid,to_id,chat_type,last_time)
                         values(null,?,?,?,unix_timestamp());';
         db::query($sql,[getUid(),$_GET['to_id'],$_GET['chat_type']]);
        
-        returnMsg(200,'加入session成功！');
+        returnMsg(200,'加入session成功！',[
+            'online'=>$online
+        ]);
     }
     /**
      * 删除聊天会话

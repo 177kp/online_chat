@@ -130,22 +130,38 @@ class Database{
     /**
      * 设置用户下线
      */
-    public function setUserOffline($uid){
-        $sql = 'update chat_user set online=0 where uid=' . (int)$uid;
-        $this->getDbConn()->exec($sql);
+    public function setUserOffline($uid,$tmp){
+        if( $tmp == 0 ){
+            $sql = 'update chat_user set online=0 where uid=' . (int)$uid;
+            $this->getDbConn()->exec($sql);
+        }else{
+            $sql = 'update chat_tmp_user set online=0 where uid=' . (int)$uid;
+            $this->getDbConn()->exec($sql);
+        }
     }
     /**
      * 更新用户心跳时间，在线状态
      */
-    public function updateHeartbeat($uids){
-        if( empty($uids) ){
+    public function updateHeartbeat($users){
+        if( empty($users) ){
             return;
         }
-        foreach( $uids as $key=>$uid ){
-            $uids[$key] = (int)$uid;
+        $uids = [];
+        $tmpUids = [];
+        foreach( $users as $key=>$user ){
+            if( $user['tmp'] == 0 ){
+                $uids[] = (int)$user['uid'];
+            }else{
+                $tmpUids[] = (int)$user['uid'];
+            }
         }
-        $sql = 'update chat_user set last_heartbeat_time='.time().',online=1 where uid in(' . implode(',',$uids) . ')';
-        $this->getDbConn()->exec($sql);
+        if( !empty($uids) ){
+            $sql = 'update chat_user set last_heartbeat_time='.time().',online=1 where uid in(' . implode(',',$uids) . ')';
+            $this->getDbConn()->exec($sql);
+        }else{
+            $sql = 'update chat_tmp_user set last_heartbeat_time='.time().',online=1 where uid in(' . implode(',',$tmpUids) . ')';
+            $this->getDbConn()->exec($sql);
+        }
     }
     /**
      * 更新咨询时间

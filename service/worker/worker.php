@@ -12,7 +12,7 @@ $timeCount = 0; //时间计数，单位秒
 while(1){
     $msg = fgets(STDIN,65535);
     $msg = trim($msg);
-    //safe_dump( 'woker: recv msg ' . $msg );
+    safe_dump( 'woker: recv msg ' . $msg );
     if( preg_match('/^timer/',$msg) ){ //每隔一秒收到的消息
         //safe_dump("worker:recv " . $msg);
         try{
@@ -74,10 +74,17 @@ function saveMessage($msg){
     if( $data['topic'] == 'message' ){
         Database::instance()->insertMessage($params);
     }elseif( $data['topic'] == 'offline' ){
-        Database::instance()->setUserOffline($params['uid']);
+        Database::instance()->setUserOffline($params['uid'],$params['tmp']);
     }elseif( $data['topic'] == 'heartBeat' ){
-        Database::instance()->updateHeartbeat($params['uids']);
+        Database::instance()->updateHeartbeat($params['users']);
     }elseif( $data['topic'] == 'consult_time' ){
         Database::instance()->update_consult_time($params['consult_time']);
+    }elseif( $data['topic'] == 'online' ){
+        Database::instance()->updateHeartbeat([
+            [
+                'uid'=>$params['uid'],
+                'tmp'=>$params['tmp']
+            ]
+        ]);
     }
 }
