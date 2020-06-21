@@ -12,9 +12,9 @@ online_chat服务端是用PHP写的在线聊天软件；引入online_chat简单�
 
 5.支持聊天类型有好友聊天、群聊、客服、计时咨询。
 
-[demo示例](http://online-chat.blogts.com/client/chat/html5/)
+[demo示例](http://chat.blogts.com/client/chat/html5/)
 
-[online_chat官网地址](http://online-chat.blogts.com/)
+[online_chat官网地址](http://chat.blogts.com/)
 
 [客户端下载地址](https://gitee.com/ttlt/online_chat_client)
 
@@ -31,11 +31,11 @@ include __DIR__ . '/../vendor/dzgz/online-chat/public/index.php';
 
 #### 服务端结构
 online_chat服务端是由server服务程序和web的api组成；软件结构图如下：
-![输入图片说明](https://online-chat.blogts.com/static/img/software-jiegou.jpg)
+![输入图片说明](https://chat.blogts.com/static/img/software-jiegou.jpg)
 
 #### 客户端截图
-![输入图片说明](https://online-chat.blogts.com/static/img/lb.123.jpg)
-![输入图片说明](https://online-chat.blogts.com/static/img/lb1.jpg)
+![输入图片说明](https://chat.blogts.com/static/img/lb.123.jpg)
+![输入图片说明](https://chat.blogts.com/static/img/lb1.jpg)
 
 #### 安装和配置
 
@@ -47,7 +47,7 @@ online_chat服务端是由server服务程序和web的api组成；软件结构图
 
 4.修改config/chat.php或者vendor/dzgz/online-chat/config/chat.php。
 
-![输入图片说明](https://online-chat.blogts.com/static/img/chat-config.jpg)
+![输入图片说明](https://chat.blogts.com/static/img/chat-config.jpg)
 
 #### 服务程序启动
 
@@ -81,7 +81,7 @@ php server.php daemon
 |msg_type     |是  |int | 消息类型    |
 |msg     |是  |string | 消息内容    |
 
-[查看更多 socket api](http://online-chat.blogts.com/#/doc/showdoc/web/?#/4?page_id=22)
+[查看更多 socket api](http://chat.blogts.com/#/doc/showdoc/web/?#/4?page_id=22)
 
 #### web api
 ```
@@ -138,7 +138,7 @@ if( md5($str) != $_POST['sign'] ){
 	returnMsg(100,'签名不正确！');
 }
 ```
-[查看更多 web api](http://online-chat.blogts.com/#/doc/showdoc/web/?#/4?page_id=22)
+[查看更多 web api](http://chat.blogts.com/#/doc/showdoc/web/?#/4?page_id=22)
 
 #### 常见问题
 ##### 1.event扩展在哪里下载？
