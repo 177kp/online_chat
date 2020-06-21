@@ -40,8 +40,8 @@ class Session{
                             order by last_time desc limit 0,20';
             $chats = db::query($sql,[$uid,$uid]);
         }elseif( $user_type == '1' ){ //咨询客服
-            $sql = 'select uid,chat_type,to_id,name,head_img,last_time,online from (select a.uid,a.chat_type,a.to_id,b.name,b.head_img,a.last_time,b.online from chat_session a 
-                        left join chat_user b on a.to_id = b.uid 
+            $sql = 'select uid,chat_type,to_id,name,head_img,last_time,online from (select a.uid,a.chat_type,a.to_id,null as name,null as head_img,a.last_time,b.online from chat_session a 
+                        left join chat_tmp_user b on a.to_id = b.uid 
                             where chat_type = 2 and a.uid=?  ) t
                             order by last_time desc limit 0,20';
             $chats = db::query($sql,[$uid]);
@@ -63,8 +63,8 @@ class Session{
                                 and a.to_id='.$chat['to_id'].'
                                 order by mid desc limit 1)';
             }elseif( $chat['chat_type'] == '2' ){
-                $sqls[] = '(select a.uid,b.name,b.head_img,a.chat_type,a.to_id,a.msg_type,a.msg,a.ctime from chat_message a left join chat_user b on a.uid = b.uid where chat_type=2 
-                                and a.to_id='.$chat['to_id'].'
+                $sqls[] = '(select a.uid,null as name,null as head_img,a.chat_type,a.to_id,a.msg_type,a.msg,a.ctime from chat_message a where chat_type=2 
+                                and ((a.uid='.$chat['uid'].' and a.to_id='.$chat['to_id'].') or (a.uid='.$chat['to_id'].' and a.to_id=' .$chat['uid'].')) 
                                 order by mid desc limit 1)';
             }
         }
@@ -76,7 +76,7 @@ class Session{
         }
         $tmpMessages = [];
         foreach( $messages as $message ){
-            if( $message['chat_type'] == '0' ){
+            if( $message['chat_type'] == '0' || $message['chat_type'] == '2' || $message['chat_type'] == '3' ){
                 if( $message['uid'] == $uid ){
                     $key = $message['chat_type'] . '-' . $message['uid'] . '-' . $message['to_id'];
                 }else{
@@ -89,25 +89,31 @@ class Session{
                 $tmpMessages[$key] = $message;
             }
         }
+        //var_export($chats);
         foreach( $chats as $k=>$chat ){
-            if( $chat['chat_type'] == '0' ){
+            if( $chat['chat_type'] == '0' || $chat['chat_type'] == '2' || $chat['chat_type'] == '3' ){
                 if( $chat['uid'] == $uid ){
-                    $key = '0' . '-' . $uid . '-' . $chat['to_id'];
+                    $key = $chat['chat_type'] . '-' . $uid . '-' . $chat['to_id'];
                 }else{
-                    $key = '0' . '-' . $lastMessage['to_id'] . '-' . $uid;
+                    $key = $chat['chat_type'] . '-' . $lastMessage['to_id'] . '-' . $uid;
                 }
             }else{
                 $key = '1' . '-' . $chat['to_id'];
             }
             if( isset($tmpMessages[$key]) ){
                 $chats[$k]['lastMessage'] = $tmpMessages[$key];
+                if( $chat['chat_type'] == '2' ){
+                    if( $chats[$k]['lastMessage']['uid'] == $uid ){
+                        $chats[$k]['lastMessage']['name'] = session('chat_user.name');
+                    }else{
+                        $chats[$k]['lastMessage']['name'] = '匿名用户'.$chat['to_id'];
+                    }
+                }
             }else{
                 $chats[$k]['lastMessage'] = null;
             }
             $chats[$k]['messages'] = [];
-            if( $chat['name'] == "" ){
-                $chats[$k]['name'] = "";
-            }
+            
         }
         returnMsg(200,'获取所有聊天会话成功！',$chats);
     }

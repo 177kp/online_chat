@@ -12,7 +12,7 @@ $timeCount = 0; //时间计数，单位秒
 while(1){
     $msg = fgets(STDIN,65535);
     $msg = trim($msg);
-    safe_dump( 'woker: recv msg ' . $msg );
+    //safe_dump( 'woker: recv msg ' . $msg );
     if( preg_match('/^timer/',$msg) ){ //每隔一秒收到的消息
         //safe_dump("worker:recv " . $msg);
         try{

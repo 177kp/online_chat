@@ -45,6 +45,10 @@ class Handshake{
         foreach( $session['sessions'] as $tmpSession ){
             Session::writeFrameByUid($tmpSession['to_id'],$tmpSession['tmp'],$msg);
         }
+        //是临时用户，并且已接入客服，推送在线消息给客服
+        if( $session['tmp'] == '1' && $session['to_id'] != null ){
+            Session::writeFrameByUid($session['to_id'],0,$msg);
+        }
         //var_export($get);
         //咨询客服，没有接入客服发送欢迎信息
         if( isset($get['tmp']) && $get['tmp'] == '1' && isset($get['welcome']) && $get['welcome'] == '1' ){ 

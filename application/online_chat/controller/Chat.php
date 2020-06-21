@@ -80,6 +80,7 @@ class Chat extends Controller{
                 'to_id'=>$to_id
             ];
             $welcome = 1;
+            $online = null;
         }else{
             $session = db::table('chat_session')->where('uid',$user['uid'])->where('chat_type=2')->field('uid,to_id')->find();
             //var_export($session);exit;
@@ -92,6 +93,11 @@ class Chat extends Controller{
             $user['name'] = '';
             $user['tmp'] = 1;
             $welcome = 0;
+            if( $to_id != '' ){
+                $online = db::table('chat_user')->where('uid',$to_id)->column('online')[0];
+            }else{
+                $online = null;
+            }
         }
         //var_export($to_id);exit;
 
@@ -107,7 +113,8 @@ class Chat extends Controller{
             'userinfo'=>$user,
             'wesocket_access_token'=>$access_token,
             'ws_addr'=>$ws,
-            'to_id'=>$to_id
+            'to_id'=>$to_id,
+            'online'=>$online
         ]);
     }
     /**

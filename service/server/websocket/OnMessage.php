@@ -109,7 +109,11 @@ class OnMessage{
         $msg = MessageModel::genMessage($session['uid'],Session::CHAT_TYPE_CUSTOMER,$recvMsg['to_id'],$recvMsg['msg_type'],$recvMsg['msg']);
         //加上发送消息人的头像和名称
         $msg['msg']['head_img'] = $session['head_img'];
-        $msg['msg']['name'] = $session['name'];
+        if( $session['tmp'] == Session::USER_TMP ){
+            $msg['msg']['name'] = '匿名用户' . $session['uid'];
+        }else{
+            $msg['msg']['name'] = $session['name'];
+        }
         Publisher::instance()->publish($msg);
         //推送通知给自己
         Session::writeFrameByUid($session['uid'],$session['tmp'],$msg);
