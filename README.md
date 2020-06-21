@@ -16,8 +16,6 @@ online_chat服务端是用PHP写的在线聊天软件；引入online_chat简单�
 
 [online_chat官网地址](http://online-chat.blogts.com/)
 
-[服务端和客户端代码打包下载](http://online-chat.blogts.com/download/online_chat.zip)
-
 [客户端下载地址](https://gitee.com/ttlt/online_chat_client)
 
 #### 通过composer获取服务端代码
