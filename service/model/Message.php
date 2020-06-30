@@ -1,6 +1,7 @@
 <?php
 namespace onlineChat\model;
 use onlineChat\model\ConsultTime;
+use onlineChat\model\Database;
 /**
  * 消息
  */
@@ -51,7 +52,8 @@ class Message{
                 'to_id'=>$to_id,
                 'msg_type'=>$msg_type, 
                 'msg'=>$msg,
-                'ctime'=>$ctime
+                'ctime'=>$ctime,
+                'mid'=>Database::instance()->getMsgId()
             ]
         ];
     }

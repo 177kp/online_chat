@@ -11,6 +11,10 @@ class Database{
      */
     protected $pdo;
     /**
+     * @var $lastMsgId 最近的消息的id
+     */
+    protected $lastMsgId;
+    /**
      * 获取当前类实例
      * @return self
      */
@@ -67,25 +71,25 @@ class Database{
         $dbConn = $this->getDbConn();
         //插入普通消息
         $sql = 'insert into chat_message(mid,uid,chat_type,to_id,msg_type,msg,ctime)
-        values(null,?,?,?,?,?,'.time().')';
+        values(?,?,?,?,?,?,'.time().')';
         $sth = $dbConn->prepare($sql);
         if( $params['msg_type'] == Message::MSG_TYPE_FILE || $params['msg_type'] == Message::MSG_TYPE_VIDEO || $params['msg_type'] == Message::MSG_TYPE_SOUND ){
             $params['msg'] = json_encode($params['msg']);
         }
         if( mb_strlen($params['msg']) <= 255 ){
-            $sth->execute([$params['uid'],$params['chat_type'],$params['to_id'],$params['msg_type'],$params['msg']]);
+            $sth->execute([$params['mid'],$params['uid'],$params['chat_type'],$params['to_id'],$params['msg_type'],$params['msg']]);
         }else{
-            $sth->execute([$params['uid'],$params['chat_type'],$params['to_id'],$params['msg_type'],'']);
-            $id = $dbConn->lastInsertId();
+            $sth->execute([$params['mid'],$params['uid'],$params['chat_type'],$params['to_id'],$params['msg_type'],'']);
             $sql = 'insert into chat_message_text(id,message_id,content)
                         values(null,?,?)';
             $sth = $dbConn->prepare($sql);
-            $sth->execute([$id,$params['msg']]);
+            $sth->execute([$params['mid'],$params['msg']]);
         }
 
         $params['uid'] = (int)$params['uid'];
         $params['to_id'] = (int)$params['to_id'];
         $params['chat_type'] = (int)$params['chat_type'];
+        $params['mid'] = (int)$params['mid'];
 
         $key = $params['uid'] . '-' . $params['to_id'] . '-' . $params['chat_type'];
 
@@ -95,15 +99,15 @@ class Database{
                         where uid=' . $params['uid'] . ' and chat_type=' . $params['chat_type'] . ' and to_id=' . $params['to_id'] . ' and soft_delete=0';
             $chat_session = $dbConn->query($sql)->fetch();
             if( empty($chat_session) ){
-                $sql = 'insert into chat_session(sid,uid,chat_type,to_id,last_time,soft_delete)
-                    values(null,'.$params['uid'].','.$params['chat_type'].','.$params['to_id'].','.time().',0);';
+                $sql = 'insert into chat_session(sid,uid,chat_type,to_id,last_time,mid,soft_delete)
+                    values(null,'.$params['uid'].','.$params['chat_type'].','.$params['to_id'].','.time().','.$params['mid'].',0);';
                 $dbConn->exec($sql);
                 $chat_sessions[$key] = $dbConn->lastInsertId();
             }else{
                 $chat_sessions[$key] = $chat_session['sid'];
             }
         }
-        $sql = 'update chat_session set last_time=' . time() . ' where sid=' . $chat_sessions[$key];
+        $sql = 'update chat_session set last_time=' . time() . ',mid='.$params['mid'].' where sid=' . $chat_sessions[$key];
         $dbConn->exec($sql);
 
         
@@ -115,8 +119,8 @@ class Database{
                             where uid=' . $params['to_id'] . ' and chat_type=' . $params['chat_type'] . ' and to_id=' . $params['uid'] . ' and soft_delete=0';
                 $chat_session = $dbConn->query($sql)->fetch();
                 if( empty($chat_session) ){
-                    $sql = 'insert into chat_session(sid,uid,chat_type,to_id,last_time,soft_delete)
-                        values(null,'.$params['to_id'].','.$params['chat_type'].','.$params['uid'].','.time().',0);';
+                    $sql = 'insert into chat_session(sid,uid,chat_type,to_id,last_time,mid,soft_delete)
+                        values(null,'.$params['to_id'].','.$params['chat_type'].','.$params['uid'].','.time().','.$params['mid'].',0);';
                     $dbConn->exec($sql);
                     $chat_sessions[$key] = $dbConn->lastInsertId();
                 }else{
@@ -188,5 +192,19 @@ class Database{
     public function suspend_all_consult(){
         $sql = 'update chat_consult_time set status=2 where status=1';
         $this->getDbConn()->query($sql);
+    }
+    /**
+     * 初始化最近消息id
+     */
+    public function initLastMsgId(){
+        $sql = 'select max(mid) from chat_message';
+        $this->lastMsgId = $this->getDbConn()->query($sql)->fetch(\PDO::FETCH_COLUMN);
+    }
+    /**
+     * 获取消息id，最近消息id加1
+     */
+    public function getMsgId(){
+        $this->lastMsgId++;
+        return $this->lastMsgId;
     }
 }

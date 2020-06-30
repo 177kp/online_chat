@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS `chat_session` (
   `chat_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0-普通聊天，1-聊天室，2-客服，3-咨询',
   `to_id` int(11) NOT NULL DEFAULT '0' COMMENT '和谁聊的id',
   `last_time` int(11) NOT NULL DEFAULT '0' COMMENT '最近更新的时间',
+  `mid` bigint(20) DEFAULT '0' COMMENT '最近消息id',
   `soft_delete` int(11) NOT NULL DEFAULT '0' COMMENT '软删除，0-正常，其他-代表已删除（删除的时间戳）',
   PRIMARY KEY (`sid`),
   UNIQUE KEY `uid` (`soft_delete`,`uid`,`chat_type`,`to_id`) USING BTREE,

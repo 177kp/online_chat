@@ -8,7 +8,7 @@ use onlineChat\model\Message;
 class File extends Controller{
     public function upload(){
         isLogin();
-        $upload_root_dir = APP_ROOT_DIR . '/public/upload';
+        $upload_root_dir = $_SERVER['DOCUMENT_ROOT'] . '/upload';
         $file = request()->file('file');
         //var_dump( $file->getMime() );exit;
         if( in_array( $file->getInfo('type'),['audio/wav','audio/x-m4a']) ){
@@ -58,7 +58,7 @@ class File extends Controller{
 
         if( $msg_type == Message::MSG_TYPE_VIDEO ){
             $video_cover_img = $this->getVideoCover($path,1,200,150);
-            $video_cover_img = str_replace(APP_ROOT_DIR . '/public','',$video_cover_img);
+            $video_cover_img = str_replace($_SERVER['DOCUMENT_ROOT'],'',$video_cover_img);
             $video_cover_img = str_replace('\\','/',$video_cover_img);
         }else{
             $video_cover_img = '';
@@ -76,7 +76,7 @@ class File extends Controller{
         if( $msg_type == Message::MSG_TYPE_SOUND && $is_mp3 == 0 ){
             $path = $this->toMp3($path);
         }
-        $path = str_replace(APP_ROOT_DIR . '/public','',$path);
+        $path = str_replace($_SERVER['DOCUMENT_ROOT'],'',$path);
         $path = str_replace('\\','/',$path);
 
         //var_dump(Request::domain());
@@ -110,7 +110,7 @@ class File extends Controller{
             returnMsg(100,'path不正确！');
         }
         
-        $path = APP_ROOT_DIR . '/public/' . $_GET['path'];
+        $path = $_SERVER['DOCUMENT_ROOT'] . '/' . $_GET['path'];
         $path = str_replace('//','/',$path);
         if( !is_file($path) ){
             returnMsg(100,'path不正确！');
