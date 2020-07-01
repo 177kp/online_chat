@@ -52,8 +52,7 @@ class Message{
                 'to_id'=>$to_id,
                 'msg_type'=>$msg_type, 
                 'msg'=>$msg,
-                'ctime'=>$ctime,
-                'mid'=>Database::instance()->getMsgId()
+                'ctime'=>$ctime
             ]
         ];
     }

@@ -54,14 +54,16 @@ CREATE TABLE IF NOT EXISTS `chat_message` (
   `uid` int(11) NOT NULL DEFAULT '0' COMMENT '用户id',
   `chat_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '聊天类型，0-普通聊天，1-聊天室，2-客服，3-咨询',
   `to_id` int(11) NOT NULL DEFAULT '0' COMMENT '发给谁的id，可以是uid,rid',
-  `msg_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0-文本，1-图片，2-语音，3-视频，10-客服欢迎消息',
+  `msg_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0-文本，1-图片，2-语音，3-视频，4-富文本，5-文件，10-客服欢迎消息',
   `msg` varchar(255) NOT NULL DEFAULT '' COMMENT '内容',
   `ctime` int(11) NOT NULL DEFAULT '0' COMMENT '发消息时间',
+  `uuid` char(32) DEFAULT NULL COMMENT '消息唯一标识符',
   `soft_delete` int(11) NOT NULL DEFAULT '0' COMMENT '软删除，0-正常，其他-代表已删除（删除的时间戳）',
   PRIMARY KEY (`mid`),
-  KEY `chat_type` (`chat_type`,`uid`,`to_id`),
-  KEY `chat_type_2` (`chat_type`,`to_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COMMENT='用户一对一聊天消息' AUTO_INCREMENT=62 ;
+  UNIQUE KEY `uuid` (`uuid`),
+  KEY `chat_type` (`soft_delete`,`chat_type`,`uid`,`to_id`),
+  KEY `chat_type_2` (`soft_delete`,`chat_type`,`to_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COMMENT='用户一对一聊天消息' AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
 
@@ -86,9 +88,13 @@ CREATE TABLE IF NOT EXISTS `chat_room` (
   `rid` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL DEFAULT '' COMMENT '聊天室名称',
   `head_img` varchar(100) NOT NULL DEFAULT '' COMMENT '聊天室头像',
+  `last_uid` bigint(20) DEFAULT '0' COMMENT '最近发送消息的uid',
+  `last_time` int(11) DEFAULT NULL COMMENT '最近消息时间',
+  `last_msg_uuid` char(32) DEFAULT NULL COMMENT '最新消息的uuid',
   `soft_delete` int(11) NOT NULL DEFAULT '0' COMMENT '软删除，0-正常，其他-代表已删除（删除的时间戳）',
-  PRIMARY KEY (`rid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='聊天室' AUTO_INCREMENT=1 ;
+  PRIMARY KEY (`rid`),
+  KEY `soft_delete` (`soft_delete`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='聊天室' AUTO_INCREMENT=2 ;
 
 -- --------------------------------------------------------
 
@@ -115,13 +121,11 @@ CREATE TABLE IF NOT EXISTS `chat_session` (
   `chat_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0-普通聊天，1-聊天室，2-客服，3-咨询',
   `to_id` int(11) NOT NULL DEFAULT '0' COMMENT '和谁聊的id',
   `last_time` int(11) NOT NULL DEFAULT '0' COMMENT '最近更新的时间',
-  `mid` bigint(20) DEFAULT '0' COMMENT '最近消息id',
+  `last_msg_uuid` char(32) DEFAULT '0' COMMENT '最近消息的uuid',
   `soft_delete` int(11) NOT NULL DEFAULT '0' COMMENT '软删除，0-正常，其他-代表已删除（删除的时间戳）',
   PRIMARY KEY (`sid`),
-  UNIQUE KEY `uid` (`soft_delete`,`uid`,`chat_type`,`to_id`) USING BTREE,
-  KEY `chat_type_2` (`soft_delete`,`chat_type`,`to_id`),
-  KEY `chat_type` (`soft_delete`,`chat_type`,`uid`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='聊天列表' AUTO_INCREMENT=5 ;
+  UNIQUE KEY `uid` (`soft_delete`,`uid`,`chat_type`,`to_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='聊天列表' AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
 
