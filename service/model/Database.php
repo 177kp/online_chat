@@ -1,6 +1,7 @@
 <?php
 namespace onlineChat\model;
 use onlineChat\model\Message;
+use onlineChat\lib\ExceptionHandle;
 class Database{
     /**
      * @var $instance 当前类的实例
@@ -56,8 +57,18 @@ class Database{
      * @param array $params
      */
     public function insertMessage($params){
-
+        try{
+            $this->_insertMessage($params);
+        }catch( \Exception $e ){
+            ExceptionHandle::chatRenderException($e);
+            if( $e instanceof \PDOException && $e->getCode() == 'HY000' ){
+                $this->getDbConn(true);
+            }
+            $this->_insertMessage($params);
+        }
         
+    }
+    protected function _insertMessage($params){
         if( !in_array($params['chat_type'],['0','1','2','3']) ){
             echo "chat_type类型不正确！" . PHP_EOL;
             return;
@@ -138,7 +149,6 @@ class Database{
             $sql = 'update chat_session set last_time=' . time() . ',last_msg_uuid="'.$uuid.'" where sid=' . $chat_sessions[$key];
             $dbConn->exec($sql);
         }
-        
     }
     /**
      * 设置用户下线

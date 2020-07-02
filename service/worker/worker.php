@@ -66,9 +66,17 @@ function saveMessage($msg){
     if( $dbConn == null ){
         //safe_dump('worker:数据库连接为NULL!');
     }
-    if( !$dbConn->inTransaction() ){
-        $dbConn->beginTransaction();
-        //safe_dump('worker:开启数据库事务！');
+    try{
+        if( !$dbConn->inTransaction() ){
+            $dbConn->beginTransaction();
+            //safe_dump('worker:开启数据库事务！');
+        }
+    }catch( \Exception $e ){
+        ExceptionHandle::chatRenderException($e);
+        if( $e instanceof \PDOException && $e->getCode() == 'HY000' ){
+            Database::instance()->getDbConn(true);
+            $dbConn->beginTransaction();
+        }
     }
     $params = $data['msg'];
     if( $data['topic'] == 'message' ){

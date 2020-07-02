@@ -46,6 +46,20 @@ CREATE TABLE IF NOT EXISTS `chat_consult_time` (
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `chat_mail_list`
+--
+
+CREATE TABLE IF NOT EXISTS `chat_mail_list` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` int(11) DEFAULT '0' COMMENT '用户id',
+  `uids` text COMMENT '所有的好友uid，用逗号隔开',
+  `rids` text COMMENT '加入所有群聊的id，用逗号隔开',
+  `soft_delete` int(11) DEFAULT '0' COMMENT '软删除，0-正常，其他已删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `soft_delete` (`soft_delete`,`uid`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='通讯录' AUTO_INCREMENT=1 ;
+
+--
 -- 表的结构 `chat_message`
 --
 

@@ -142,7 +142,9 @@ class Session{
             if( $session['chat_type'] == '0' || $session['chat_type'] == '3' ){
                 $uids[] = $session['to_id'];
             }else if( $session['chat_type'] == '1' ){
-                $uids[] = $session['last_uid'];
+                if( isset($session['last_uid']) ){
+                    $uids[] = $session['last_uid'];
+                }
             }else if( $session['chat_type'] == '2' ){
                 $tmpUids[] = $session['to_id'];
             }
@@ -266,28 +268,125 @@ class Session{
         }
         returnMsg(200,'获取所有聊天会话成功！',$sessions);
     }
+    /**
+     * 获取通讯录列表
+     * 默认情况;也就是$_GET[type]为空
+     * 用户类型为普通用户，查询普通用户列表和群聊
+     * 用户类型为客服，查询带接入客服列表
+     * 用户类型为咨询师，通讯录为空
+     * $_GET[type] string 类型
+     * 用户类型是普通用户，$_GET[type]=all，查询用户列表（包含客服、咨询师）和群聊
+     * 用户类型是客服，$_GET[type]=all，查询用户列表（包含客服、咨询师）、群聊、带接入客服列表；
+     * 用户类型是客服，$_GET[type]=common，查询用户列表（包含客服、咨询师）、群聊；
+     * 用户类型是咨询师，$_GET[type]=all，查询用户列表（包含客服、咨询师）和群聊
+     */
     public function getContacts(){
         isLogin();
-        //exit;
-        //var_dump(getUid());exit;
+        /**
+         * @var string $strategy
+         * 策略
+         * default-默认，查询所有用户、群聊；
+         * mail_list采用通讯录；通讯录需要单独维护
+         */
+        $strategy = 'mail_list';
         $user_type = session('chat_user.user_type');
-        if( $user_type == 0 ){
-            $sql = 'select 1 as chat_type,rid as to_id,head_img,name from chat_room union all
-                    select 0 as chat_type,uid as to_id,head_img,name from chat_user where uid>9999 and user_type = 0 and uid <>' . getUid();
-            $contacts = db::query($sql);
-        }elseif( $user_type == 1 ){
-            $contacts = WebsocketServerApi::getCustomerContacts();
-            //var_export($contacts);exit;
-        }elseif( $user_type == 2 ){
-            $sql = 'select 3 as chat_type,uid as to_id,head_img,name from chat_user where uid>9999 and user_type = 2 and uid <>' . getUid();
-            $contacts = db::query($sql);
-        }else{
-            $contacts = [];
+        $contacts = [];
+
+        //当前用户是客服，查询带接入的用户
+        do{
+            if( $user_type != 1 ){
+                break;
+            }
+            if( !empty($_GET['type']) && $_GET['type'] == 'common' ){
+                break;
+            }
+            $arr = WebsocketServerApi::getCustomerContacts();
+            $contacts = array_merge($contacts,$arr);
+            if( empty($_GET['type']) ){
+                returnMsg(200,'获取所有联系人成功！',$contacts);
+            }
+        }while(0);
+
+        //策略是通讯录，计算$mail_uids,$mail_rids
+        if( $strategy == 'mail_list' ){
+            $mail_uids = [];
+            $mail_rids = [];
+            $chat_mail_list = db::table('chat_mail_list')->where('uid',session('chat_user.uid'))->where('soft_delete=0')->find();
+            if( !empty($chat_mail_list) ){
+                $mail_uids = explode(',',$chat_mail_list['uids']);
+                foreach( $mail_uids as $k=>$mail_uid ){
+                    $mail_uids[$k] = (int)$mail_uid;
+                }
+                $mail_rids = explode(',',$chat_mail_list['rids']);
+                foreach( $mail_rids as $k=>$mail_rid ){
+                    $mail_rids[$k] = (int)$mail_rid;
+                }
+            }
         }
+
+        //查询群聊列表
+        do{
+            if( $user_type == 0 ){
+                if( !empty($_GET['type']) && !in_array($_GET['type'],['all']) ){
+                    break;
+                }
+            }elseif( $user_type == 1 ){
+                if( empty($_GET['type']) || !in_array($_GET['type'],['all','common']) ){
+                    break;
+                }
+            }elseif( $user_type == 2 ){
+                if( empty($_GET['type']) || !in_array($_GET['type'],['all']) ){
+                    break;
+                }
+            }
+            $Query = db::table('chat_room')->field('1 as chat_type,rid as to_id,head_img,name')->where('soft_delete=0')->order('rid desc')->limit(500);
+            if( $strategy == 'mail_list' ){
+                if( empty($mail_rids) ){
+                    break;
+                }
+                $arr = $Query->where('rid','in',$mail_rids)->select();
+            }else{
+                $arr = $Query->select();
+            }
+            $contacts = array_merge($contacts,$arr);
+        }while(0);
+        
+        //查询用户列表
+        do{
+            if( $user_type == 0 ){
+                if( !empty($_GET['type']) && !in_array($_GET['type'],['all']) ){
+                    break;
+                }
+            }elseif( $user_type == 1 ){
+                if( empty($_GET['type']) || !in_array($_GET['type'],['all','common']) ){
+                    break;
+                }
+            }elseif( $user_type == 2 ){
+                if( empty($_GET['type']) || !in_array($_GET['type'],['all']) ){
+                    break;
+                }
+            }
+            $Query = db::table('chat_user')->field('0 as chat_type,uid as to_id,head_img,name')->where('soft_delete=0')->order('uid desc')->limit(500);
+            if( $strategy == 'mail_list' ){
+                if( empty($mail_uids) ){
+                    break;
+                }
+                $Query->where('uid','in',$mail_uids);
+            }
+            if( empty($_GET['type']) ){
+                if( $user_type == 0 ){
+                    $Query->where('user_type',0); //默认情况，有用户限制
+                }
+            }
+            $arr = $Query->select();
+            //var_dump($arr);
+            $contacts = array_merge($contacts,$arr);
+        }while(0);
         returnMsg(200,'获取所有联系人成功！',$contacts);
+
     }
     public function getConsults(){
-        $sql = 'select 3 as chat_type,uid as to_id,head_img,name from chat_user where uid>9999 and user_type=2';
+        $sql = 'select 3 as chat_type,uid as to_id,head_img,name from chat_user where uid>9999 and user_type=2 order by uid desc limit 500';
         $contacts = db::query($sql);
         returnMsg(200,'',$contacts);
     }
