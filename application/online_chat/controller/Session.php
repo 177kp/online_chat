@@ -288,7 +288,7 @@ class Session{
          * default-默认，查询所有用户、群聊；
          * mail_list采用通讯录；通讯录需要单独维护
          */
-        $strategy = 'mail_list';
+        $strategy = 'default';
         $user_type = session('chat_user.user_type');
         $contacts = [];
 
@@ -367,6 +367,7 @@ class Session{
                 }
             }
             $Query = db::table('chat_user')->field('0 as chat_type,uid as to_id,head_img,name')->where('soft_delete=0')->order('uid desc')->limit(500);
+            $Query->where('uid','<>',getUid());
             if( $strategy == 'mail_list' ){
                 if( empty($mail_uids) ){
                     break;
@@ -385,6 +386,9 @@ class Session{
         returnMsg(200,'获取所有联系人成功！',$contacts);
 
     }
+    /**
+     * 获取咨询师列表
+     */
     public function getConsults(){
         $sql = 'select 3 as chat_type,uid as to_id,head_img,name from chat_user where uid>9999 and user_type=2 order by uid desc limit 500';
         $contacts = db::query($sql);
@@ -392,9 +396,23 @@ class Session{
     }
     /**
      * 加入聊天会话
+     * $_GET[type] 聊天类型；0，1，2，3
+     * $_GET[to_id] 和谁聊天 
+     * $_GET[type]=0；加入普通聊天
+     * $_GET[type]=1；加入群聊，$_GET[to_id]是聊天室id
+     * $_GET[type]=2；当前用户类型必须是咨询师，接待咨询客服的；$_GET[to_id]是临时用户id
+     * $_GET[type]=3；加入咨询聊天
      */
     public function joinSession(){
         isLogin();
+        /**
+         * @var string $strategy
+         * 策略
+         * default-默认，查询所有用户、群聊；
+         * mail_list采用通讯录；通讯录需要单独维护
+         */
+        $strategy = 'default';
+        $user_type = session('chat_user.user_type');
         if( !isset($_GET['chat_type']) ){
             returnMsg(100,'chat_type参数不存在！');
         }
@@ -404,7 +422,56 @@ class Session{
         if( empty($_GET['to_id']) ){
             returnMsg(100,'to_id参数不能为空！');
         }
-        if( $_GET['chat_type'] == '0' || $_GET['chat_type'] == '3'){
+        if( $_GET['chat_type'] == '0' ){ //加入普通聊天
+            if( $_GET['to_id'] == getUid() ){
+                returnMsg(100,'to_id不能是自己的uid！');
+            }
+            if( $strategy == 'mail_list' ){
+                $chat_mail_list = db::table('chat_mail_list')->where('uid',getUid())->where('soft_delete=0')->find();
+                if( empty($chat_mail_list) ){
+                    returnMsg(101,'to_id不正确！');
+                }
+                $mail_uids = explode(',',$chat_mail_list['uids']);
+                if( !in_array($_GET['to_id'],$mail_uids) ){
+                    returnMsg(101,'to_id不正确！');
+                }
+            }
+            $user = db::table('chat_user')->where('uid',$_GET['to_id'])->find();
+            if( empty($user) ){
+                returnMsg(100,'to_id不正确！');
+            }
+            $online = $user['online'];
+        }elseif( $_GET['chat_type'] == '1' ){ //加入群聊
+            if( $strategy == 'mail_list' ){
+                $chat_mail_list = db::table('chat_mail_list')->where('uid',getUid())->where('soft_delete=0')->find();
+                if( empty($chat_mail_list) ){
+                    returnMsg(101,'to_id不正确！');
+                }
+                $mail_rids= explode(',',$chat_mail_list['rids']);
+                if( !in_array($_GET['to_id'],$mail_rids) ){
+                    returnMsg(101,'to_id不正确！');
+                }
+            }
+            $room = db::table('chat_room')->where('rid',$_GET['to_id'])->where('soft_delete=0')->find();
+            if( empty($room) ){
+                returnMsg(100,'to_id不正确！');
+            }
+            WebsocketServerApi::roomJoin(getUid(),$room['rid']);
+            $online = 1;
+        }elseif( $_GET['chat_type'] == '2' ){ //客服接入用户
+            if( session('chat_user.user_type') != 1 ){
+                returnMsg(100,'当前用户类型不正确！');
+            }
+            $user = db::table('chat_tmp_user')->where('uid',$_GET['to_id'])->find();
+            if( empty($user) ){
+                returnMsg(100,'to_id不正确！');
+            }
+            $res = WebsocketServerApi::customerJoin(getUid(),$_GET['to_id']);
+            if( $res['code'] != 200 ){
+                returnMsg($res['code'],$res['msg']);
+            }
+            $online = $user['online'];
+        }elseif( $_GET['chat_type'] == '3' ){ //加入咨询会话
             if( $_GET['to_id'] == getUid() ){
                 returnMsg(100,'to_id不能是自己的uid！');
             }
@@ -412,24 +479,9 @@ class Session{
             if( empty($user) ){
                 returnMsg(100,'to_id不正确！');
             }
-            $online = $user['online'];
-        }elseif( $_GET['chat_type'] == '1' ){
-            $room = db::table('chat_room')->where('rid',$_GET['to_id'])->find();
-            if( empty($room) ){
-                returnMsg(100,'to_id不正确！');
+            if( $user['user_type'] != 2 ){
+                returnMsg(100,'用户不是咨询师！');
             }
-            WebsocketServerApi::roomJoin(getUid(),$room['rid']);
-            $online = '';
-        }elseif( $_GET['chat_type'] == '2' ){
-            $user = db::table('chat_tmp_user')->where('uid',$_GET['to_id'])->find();
-            if( empty($user) ){
-                returnMsg(100,'to_id不正确！');
-            }
-            WebsocketServerApi::customerJoin(getUid(),$_GET['to_id']);
-            //var_export($res);exit;
-            $sql = 'insert ignore into chat_session(sid,uid,to_id,chat_type,last_time)
-                        values(null,?,?,?,unix_timestamp());';
-            db::query($sql,[$_GET['to_id'],getUid(),$_GET['chat_type']]);
             $online = $user['online'];
         }
         $sql = 'insert ignore into chat_session(sid,uid,to_id,chat_type,last_time)

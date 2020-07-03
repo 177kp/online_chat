@@ -42,6 +42,9 @@ class CustomerApi{
                 return httpApiMsg(100,'已接入客服了！');
             }
         }
+        if( empty($sessions) ){
+            return httpApiMsg(100,'用户不存在！');
+        }
         $msg = Message::genCustomerJoin($get['uid'],$get['to_id']);
         Publisher::instance()->publish($msg);
         foreach( $sessions as $session ){

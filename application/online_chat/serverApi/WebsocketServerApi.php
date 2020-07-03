@@ -42,8 +42,8 @@ class WebsocketServerApi{
             'uid'=>$uid,
             'to_id'=>$to_id
         ];
-        $res = self::httpGet($params);
-        return true;
+        $res = self::httpGet($params,false);
+        return $res;
     }
     static function roomExit($uid,$to_id){
         $params = [
@@ -80,12 +80,14 @@ class WebsocketServerApi{
         return true;
     }
 
-    static function httpGet($params){
+    static function httpGet($params,$throw=true){
         $res = file_get_contents( 'http://' . config('chat.server.http_host') . ':' .config('chat.server.http_port'). '?' . http_build_query($params) );
         //echo $res . PHP_EOL;
         $resArr = json_decode($res,true);
-        if( !isset($resArr['code']) || $resArr['code'] != '200' ){
-            throw new \Exception($res);
+        if( $throw == true ){
+            if( !isset($resArr['code']) || $resArr['code'] != '200' ){
+                throw new \Exception($res);
+            }
         }
         return $resArr;
     }
