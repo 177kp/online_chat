@@ -494,6 +494,16 @@ class Session{
     }
     /**
      * 删除聊天会话
+     * $_GET[chat_type] 聊天类型
+     * $_GET[to_id] 删除和谁的聊天
+     * $_GET[chat_type]=0，普通聊天；删除chat_session里数据，删除消息（软删除）
+     * $_GET[chat_type]=1，群聊；删除chat_session里数据
+     * $_GET[chat_type]=2，客服聊天；删除chat_session里数据
+     * $_GET[chat_type]=3，咨询聊天；删除chat_session里数据，删除消息（软删除）
+     * 软删除说明：
+     * soft_delete字段为0代表双方都没有删除；
+     * soft_delete字段为1代表双方都删除了；
+     * soft_delete字段等于uid，代表一方删除了；
      */
     public function delSession(){
         isLogin();
@@ -504,12 +514,46 @@ class Session{
         if( !isset($_GET['chat_type']) ){
             returnMsg(100,'chat_type参数不存在！');
         }
-        if( !in_array($_GET['chat_type'],['0','1']) ){
+        if( !in_array($_GET['chat_type'],['0','1','2','3']) ){
             returnMsg(100,'chat_type不正确！');
         }
-        db::table('chat_session')->where('uid',$uid)->where('to_id',$_GET['to_id'])->where('chat_type',[$_GET['chat_type']])->delete();
-        if( $_GET['chat_type'] == '1' ){
+        $chat_sessions = db::table('chat_session')->where('uid',$uid)->where('to_id',$_GET['to_id'])->where('chat_type',$_GET['chat_type'])->select();
+        if( empty($chat_sessions) ){
+            returnMsg(100,'会话不存在！');
+        }
+        $sid = 0;
+        foreach( $chat_sessions as $chat_session ){
+            if( $chat_session['soft_delete'] == 0 ){
+                $sid = $chat_session['sid'];
+            }
+        }
+        if( $sid == 0 ){
+            returnMsg(100,'会话已删除！');
+        }
+        db::table('chat_session')->where('sid',$sid)->update([
+            'soft_delete'=>time()
+        ]);
+        //退出群聊
+        if( $_GET['chat_type'] == '1' ){ 
             WebsocketServerApi::roomExit($uid,$_GET['to_id']);
+        }
+        if( $_GET['chat_type'] == '0' || $_GET['chat_type'] == '3' ){
+            db::table('chat_message')->where('uid',$uid)->where('to_id',$_GET['to_id'])->where('chat_type',$_GET['chat_type'])
+            ->where('soft_delete',$_GET['to_id'])->update([
+                'soft_delete'=>1
+            ]);
+            db::table('chat_message')->where('uid',$_GET['to_id'])->where('to_id',$uid)->where('chat_type',$_GET['chat_type'])
+            ->where('soft_delete',$_GET['to_id'])->update([
+                'soft_delete'=>1
+            ]);
+            db::table('chat_message')->where('uid',$uid)->where('to_id',$_GET['to_id'])->where('chat_type',$_GET['chat_type'])
+            ->where('soft_delete',0)->update([
+                'soft_delete'=>$uid
+            ]);
+            db::table('chat_message')->where('uid',$_GET['to_id'])->where('to_id',$uid)->where('chat_type',$_GET['chat_type'])
+            ->where('soft_delete',0)->update([
+                'soft_delete'=>$uid
+            ]);
         }
         returnMsg(200,'删除成功！');
     }

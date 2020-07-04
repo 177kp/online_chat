@@ -47,7 +47,7 @@ class WebsocketServerApi{
     }
     static function roomExit($uid,$to_id){
         $params = [
-            'action'=>'chatRoom/exit',
+            'action'=>'chatRoom/signOut',
             'uid'=>$uid,
             'rid'=>$to_id
         ];
