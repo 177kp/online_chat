@@ -6,6 +6,10 @@ use onlineChat\model\Message as MessageModel;
 class Message{
     /*
      * 聊天记录
+     * $_GET[to_id] 和谁聊天id
+     * $_GET[chat_type] 聊天类型
+     * $_GET[page] 分页
+     * $_GET[pageNum] 每页多少条
      */
     public function index(){
         $uid = getUid();
@@ -18,37 +22,56 @@ class Message{
         if( !in_array($_GET['chat_type'],['0','1','2','3']) ){
             returnMsg(100,'chat_type不正确！');
         }
+        //分页相关数据
+        if( empty($_GET['page']) || $_GET['page'] < 1 ){
+            $page = 1;
+        }else{
+            $page = $_GET['page'];
+        }
+        if( empty($_GET['pageNum']) || $_GET['pageNum'] < 1 ){
+            $pageNum = 20;
+        }else{
+            $pageNum = (int)$_GET['pageNum'];
+        }
+        if( $pageNum > 500 ){
+            returnMsg(100,'参数pageNum不能大于500！');
+        }
+        $start = ($page - 1) * $pageNum;
+
         $to_id = (int)$_GET['to_id'];
         db::query('set names utf8mb4');
         if( $_GET['chat_type'] == '0' ){
-            $sql = 'select a.mid,a.uid,b.name,b.head_img,0 as chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
+            $sql = 'select a.mid,a.uid,b.name,b.head_img,chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
                         left join chat_user b on a.uid=b.uid 
-                        where ( a.chat_type = 0 and a.uid=' . $uid . ' and a.to_id=' . $to_id . ') or
-                         ( a.chat_type = 0 and a.uid=' . $to_id .' and  a.to_id=' . $uid .') order by a.mid desc limit 20';
+                        where ( a.chat_type = 0 and a.uid=' . $uid . ' and a.to_id=' . $to_id . ' and (a.soft_delete=0 or a.soft_delete = '.$to_id.') ) or
+                         ( a.chat_type = 0 and a.uid=' . $to_id .' and  a.to_id=' . $uid . ' and (a.soft_delete=0 or a.soft_delete = '.$to_id.') ) 
+                            order by a.mid desc limit ' . $start.','.$pageNum;
             $messages = db::query($sql);
         }elseif( $_GET['chat_type'] == '1' ){
-            $sql = 'select a.mid,a.uid,b.name,b.head_img,1 as chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
+            $sql = 'select a.mid,a.uid,b.name,b.head_img,chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
                         left join chat_user b on a.uid=b.uid 
-                        where (a.chat_type = 1 and a.to_id=' .$to_id. ')  order by a.mid desc limit 20';
+                        where (a.chat_type = 1 and a.to_id=' .$to_id. ')  order by a.mid desc limit ' . $start.','.$pageNum;
                         $messages = db::query($sql);
         }elseif( $_GET['chat_type'] == '2' ){
+            //临时用户uid
             if( session('chat_user.tmp') == '1' ){
-                $id = $uid;
+                $id = getUid();
             }else{
                 $id = $to_id;
             }
-            $sql = 'select a.mid,a.uid,b.name,b.head_img,0 as chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
+            $sql = 'select a.mid,a.uid,b.name,b.head_img,chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
                         left join chat_user b on a.uid=b.uid 
-                        where ( a.chat_type = 2 and a.uid=' . $id . ') or
-                        ( a.chat_type = 2  and  a.to_id=' . $id .') order by a.mid desc limit 20';
+                        where ( a.chat_type = 2 and a.uid=' . $id . ' and tmp=1 ) or
+                        ( a.chat_type = 2  and  a.to_id=' . $id .' and tmp=0 ) order by a.mid desc limit ' . $start.','.$pageNum;
+            
             //echo $sql;exit;
             $messages = db::query($sql);
         }elseif( $_GET['chat_type'] == '3' ){
             $sql = 'select a.mid,a.uid,b.name,b.head_img,3 as chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
                         left join chat_user b on a.uid=b.uid 
-                        where ( a.chat_type = 3 and a.uid=' . $uid . ' and a.to_id=' . $to_id . ') or
-                         ( a.chat_type = 3 and a.uid=' . $to_id .' and  a.to_id=' . $uid .') order by a.mid desc limit 20';
-            $messages = db::query($sql);
+                        where ( a.chat_type = 3 and a.uid=' . $uid . ' and a.to_id=' . $to_id . ' and (a.soft_delete=0 or a.soft_delete = '.$to_id.') ) or
+                         ( a.chat_type = 3 and a.uid=' . $to_id .' and  a.to_id=' . $uid .' and (a.soft_delete=0 or a.soft_delete = '.$to_id.') ) 
+                         order by a.mid desc limit ' . $start.','.$pageNum;
             //echo $sql;exit;
             $messages = db::query($sql);
         }

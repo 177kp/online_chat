@@ -106,7 +106,7 @@ class OnMessage{
         }
     }
     static function Customer($session,$Connection,$recvMsg){
-        $msg = MessageModel::genMessage($session['uid'],Session::CHAT_TYPE_CUSTOMER,$recvMsg['to_id'],$recvMsg['msg_type'],$recvMsg['msg']);
+        $msg = MessageModel::genMessage($session['uid'],Session::CHAT_TYPE_CUSTOMER,$recvMsg['to_id'],$recvMsg['msg_type'],$recvMsg['msg'],null,$session['tmp']);
         //加上发送消息人的头像和名称
         $msg['msg']['head_img'] = $session['head_img'];
         if( $session['tmp'] == Session::USER_TMP ){

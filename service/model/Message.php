@@ -39,8 +39,9 @@ class Message{
      * @param int $msg_type 0-文本,1-图片,10-客服接入
      * @param string $msg 消息内容
      * @param float $time 时间
+     * @param int $tmp 发送消息的是否是临时用户
      */
-    static function genMessage($uid,$chat_type,$to_id,$msg_type,$msg,$ctime=null){
+    static function genMessage($uid,$chat_type,$to_id,$msg_type,$msg,$ctime=null,$tmp=0){
         if( $ctime == null ){
             $ctime = time();
         }
@@ -48,6 +49,7 @@ class Message{
             'topic'=>'message',
             'msg'=>[
                 'uid'=>$uid,
+                'tmp'=>$tmp,
                 'chat_type'=>$chat_type,
                 'to_id'=>$to_id,
                 'msg_type'=>$msg_type, 

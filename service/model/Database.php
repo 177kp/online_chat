@@ -82,16 +82,16 @@ class Database{
         $uuid = md5( implode('',$params) . microtime(true) . mt_rand(1000,9999) );
         $dbConn = $this->getDbConn();
         //插入普通消息
-        $sql = 'insert into chat_message(mid,uid,chat_type,to_id,msg_type,msg,ctime,uuid,soft_delete)
-        values(null,?,?,?,?,?,'.time().',?,0)';
+        $sql = 'insert into chat_message(mid,uid,tmp,chat_type,to_id,msg_type,msg,ctime,uuid,soft_delete)
+        values(null,?,?,?,?,?,?,'.time().',?,0)';
         $sth = $dbConn->prepare($sql);
         if( $params['msg_type'] == Message::MSG_TYPE_FILE || $params['msg_type'] == Message::MSG_TYPE_VIDEO || $params['msg_type'] == Message::MSG_TYPE_SOUND ){
             $params['msg'] = json_encode($params['msg']);
         }
         if( mb_strlen($params['msg']) <= 255 ){
-            $sth->execute([$params['uid'],$params['chat_type'],$params['to_id'],$params['msg_type'],$params['msg'],$uuid]);
+            $sth->execute([$params['uid'],$params['tmp'],$params['chat_type'],$params['to_id'],$params['msg_type'],$params['msg'],$uuid]);
         }else{
-            $sth->execute([$params['uid'],$params['chat_type'],$params['to_id'],$params['msg_type'],'',$uuid]);
+            $sth->execute([$params['uid'],$params['tmp'],$params['chat_type'],$params['to_id'],$params['msg_type'],'',$uuid]);
             $sql = 'insert into chat_message_text(id,message_id,content)
                         values(null,?,?)';
             $sth = $dbConn->prepare($sql);

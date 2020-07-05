@@ -66,18 +66,19 @@ CREATE TABLE IF NOT EXISTS `chat_mail_list` (
 CREATE TABLE IF NOT EXISTS `chat_message` (
   `mid` bigint(20) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL DEFAULT '0' COMMENT '用户id',
+  `tmp` tinyint(1) DEFAULT '0' COMMENT '发送消息的人，是否是临时用户；该字段是客户聊天有用；0-不是，1-是',
   `chat_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '聊天类型，0-普通聊天，1-聊天室，2-客服，3-咨询',
   `to_id` int(11) NOT NULL DEFAULT '0' COMMENT '发给谁的id，可以是uid,rid',
   `msg_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0-文本，1-图片，2-语音，3-视频，4-富文本，5-文件，10-客服欢迎消息',
   `msg` varchar(255) NOT NULL DEFAULT '' COMMENT '内容',
   `ctime` int(11) NOT NULL DEFAULT '0' COMMENT '发消息时间',
   `uuid` char(32) DEFAULT NULL COMMENT '消息唯一标识符',
-  `soft_delete` int(11) NOT NULL DEFAULT '0' COMMENT '软删除，0-正常，其他-代表已删除（删除的时间戳）',
+  `soft_delete` int(11) NOT NULL DEFAULT '0' COMMENT '软删除，0-正常，1-都删除，用户id-这个用户删除了',
   PRIMARY KEY (`mid`),
   UNIQUE KEY `uuid` (`uuid`),
-  KEY `chat_type` (`soft_delete`,`chat_type`,`uid`,`to_id`),
-  KEY `chat_type_2` (`soft_delete`,`chat_type`,`to_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COMMENT='用户一对一聊天消息' AUTO_INCREMENT=1 ;
+  KEY `chat_type` (`uid`,`chat_type`,`to_id`),
+  KEY `chat_type_2` (`to_id`,`chat_type`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COMMENT='用户一对一聊天消息' AUTO_INCREMENT=1507 ;
 
 -- --------------------------------------------------------
 
