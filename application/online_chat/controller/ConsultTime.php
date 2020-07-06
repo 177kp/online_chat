@@ -4,8 +4,14 @@ use think\Db;
 use think\facade\Request;
 use think\Controller;
 use app\online_chat\serverApi\WebsocketServerApi;
+use app\online_chat\serverApi\ModelApi;
+use app\online_chat\serverApi\ChatException;
 
 class ConsultTime extends Controller{
+    /**
+     * 获取咨询聊天计时
+     * $_GET[to_id] 和谁聊天
+     */
     public function getConsultTime(){
         if( empty($_GET['to_id']) ){
             returnMsg(100,'to_id参数不能为空！');
@@ -59,7 +65,8 @@ class ConsultTime extends Controller{
         ]);
     }
     /**
-     * 添加免费咨询 
+     * 添加免费咨询
+     * $_POST[to_id] 和谁聊天
      */
     public function addFreeConsult(){
         if( empty($_POST['to_id']) ){
@@ -113,6 +120,7 @@ class ConsultTime extends Controller{
     }
     /**
      * 新增计时
+     * $_POST[to_id] 咨询师id
      */
     public function addConsult(){
         if( empty($_POST['to_id']) ){
@@ -124,81 +132,44 @@ class ConsultTime extends Controller{
         }
         $duration = 1800;
         $uid = session('chat_user.uid');
-        $id  = db::table('chat_consult_time')->insertGetId([
-            'uid'=>$uid,
-            'to_id'=>$_POST['to_id'],
-            'status'=>0,
-            'duration_count'=>$duration,
-            'duration'=>$duration,
-            'free_duration_count'=>0,
-            'free_duration'=>0,
-            'total_duration'=>$duration,
-            'delayed_duration_total'=>0,
-            'delayed_num'=>0,
-            'ctime'=>time(),
-            'soft_delete'=>0
-        ]);
-
-        $consult_time = db::table('chat_consult_time')->where('id',$id)->find();
-        $chatSession = db::table('chat_session')->where('uid',$_POST['to_id'])->where('to_id',$uid)->where('chat_type=3')->find();
-        if( empty($chatSession) ){
-            db::table('chat_session')->insert([
-                'uid'=>$_POST['to_id'],
-                'to_id'=>$uid,
-                'chat_type'=>3,
-                'last_time'=>0,
-                'soft_delete'=>0
-            ]);
+        try{
+            $id = ModelApi::addConsult($uid,$_POST['to_id'],$duration);
+        }catch( \Exception $e ){
+            if( $e instanceof ChatException ){
+                returnMsg(100,$e->getMessage());
+            }else{
+                throw $e;
+            }
         }
+        $consult_time = db::table('chat_consult_time')->where('id',$id)->find();
         returnMsg(200,'',[
             'consult_time'=>$consult_time
         ]);
     }
     /**
      * 延时
+     * $_POST[consult_time_id] 咨询id
      */
     public function delayedDuration(){
         if( empty($_POST['consult_time_id']) ){
             returnMsg(100,'consult_time_id参数不能为空！');
         }
         $uid =  session('chat_user.uid');
-        
-        Db::startTrans();
-        $consult_time = db::table('chat_consult_time')->where('id',$_POST['consult_time_id'])->where('uid',$uid)->lock(true)->find();
-        
-        if( empty($consult_time) ){
-            returnMsg(200,'consult_time_id参数不正确！');
+        $duration = 1800;
+        try{
+            ModelApi::delayedDuration($uid,$_POST['consult_time_id'],$duration);
+        }catch( \Exception $e ){
+            if( $e instanceof ChatException ){
+                returnMsg(100,$e->getMessage());
+            }else{
+                throw $e;
+            }
         }
-        if( $consult_time['status'] == '4' ){
-            returnMsg(100,'咨询计时已取消了的');
-        }
-        if( $consult_time['status'] == '3' ){
-            $status = 2;
-        }else{
-            $status = $consult_time['status'];
-        }
-        if( empty($consult_time) ){
-            returnMsg(100,'consult_time_id参数不正确！');
-        }
-        if( empty($_POST['delayed_duration']) ){
-            returnMsg(100,'delayed_duration参数不能为空！');
-        }
-        if( $_POST['delayed_duration'] < 0 ){
-            returnMsg(100,'delayed_duration参数不能小于0！');
-        }
-        $duration = (int)$_POST['delayed_duration'];
-        db::table('chat_consult_time')->where('id',$_POST['consult_time_id'])->update([
-            'duration_count'=>$consult_time['duration_count'] + $duration,
-            'total_duration'=>$consult_time['total_duration'] + $duration,
-            'delayed_duration_total'=>$consult_time['delayed_duration_total'] + $duration,
-            'delayed_num'=>$consult_time['delayed_num'] + 1,
-        ]);
-        db::commit();
-        WebsocketServerApi::delayedDuration($duration,$_POST['consult_time_id']);
         returnMsg(200,'延时成功！');
     }
     /**
      * 开启咨询
+     * $_POST[consult_time_id] 咨询id
      */
     public function startConsult(){
         if( empty($_POST['consult_time_id']) ){
@@ -237,6 +208,7 @@ class ConsultTime extends Controller{
     }
     /**
      * 暂停咨询
+     * $_POST[consult_time_id] 咨询id
      */
     public function suspendConsult(){
         if( empty($_POST['consult_time_id']) ){

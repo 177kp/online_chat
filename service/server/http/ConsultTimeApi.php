@@ -87,6 +87,8 @@ class ConsultTimeApi{
             ConsultTimeModel::$consult_times[$id]['duration_count'] += $duration;
             ConsultTimeModel::$consult_times[$id]['delayed_duration_total'] += $duration;
             ConsultTimeModel::$consult_times[$id]['delayed_num'] += 1;
+        }else{
+            return httpApiMsg(100,'consult_time_id参数不正确！');
         }
         /*
         $msg =[

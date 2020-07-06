@@ -6,6 +6,16 @@ use think\facade\Request;
 use onlineChat\model\Message;
 
 class File extends Controller{
+    /**
+     * $_FILE[file] 上传文件
+     * 上传根目录是$_SERVER[DOCUMENT_ROOT]/upload；下载地址是:$domain/upload/*
+     * 文件大小限制：10M
+     * 音频文件的mime_type限制：audio/wav,audio/x-m4a
+     * 图片文件名称后缀限制：jpg,jpeg,png,gif,bmp,ico；mime_type；限制：image/*
+     * 视频文件后缀限制：mp4
+     * 其他文件：无文件名后缀和mime_type限制；但文件保存的是没有后缀的
+     * 视频、音频需要ffmpeg支持；视频需要获取封面图片、时长；音频需要获取到时长
+     */
     public function upload(){
         isLogin();
         $upload_root_dir = $_SERVER['DOCUMENT_ROOT'] . '/upload';
@@ -91,6 +101,11 @@ class File extends Controller{
             'filesize'=>$filesize
         ]);
     }
+    /**
+     * 文件下载
+     * $_GET[path] 文件路径，必须是/upload/file/*
+     * $_GET[filename] 源文件路径
+     */
     public function download(){
         session_write_close();
         if( !isset($_GET['path']) ){
@@ -130,6 +145,11 @@ class File extends Controller{
         fclose ( $file );  
         exit;//需要exit，要不然thinkphp会改变content-type
     }
+    /**
+     * 获取音频和视频的时长
+     * @param $path 路径
+     * @return string 时长
+     */
     protected function ffmpeg_get_mp3_duration($path){
         //echo 'ffmpeg -i '.$path.' -f null - 2>&1';exit;
         ob_start();
@@ -176,6 +196,11 @@ class File extends Controller{
         }
         
     }
+    /**
+     * 音频文件转成mp3
+     * @param $path 路径
+     * @return string 路径
+     */
     protected function toMp3($path){
         $command = 'ffmpeg -i '.$path.' -ab 16 -ar 16000 '.$path.'.mp3';
         system($command);
