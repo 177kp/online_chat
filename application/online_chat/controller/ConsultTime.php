@@ -69,6 +69,15 @@ class ConsultTime extends Controller{
      * $_POST[to_id] 和谁聊天
      */
     public function addFreeConsult(){
+        /**
+         * @var $strategy 添加免费咨询接口策略
+         * default使用当前接口
+         * user用户自定义接口
+         */
+        $strategy = 'default';
+        if( $strategy != 'default' ){
+            returnMsg(100,'请使用用户自定义添加免费咨询接口');
+        }
         if( empty($_POST['to_id']) ){
             returnMsg(100,'to_id参数不能为空！');
         }
@@ -123,6 +132,15 @@ class ConsultTime extends Controller{
      * $_POST[to_id] 咨询师id
      */
     public function addConsult(){
+        /**
+         * @var $strategy 新增计时接口策略
+         * default使用当前接口
+         * user用户自定义接口
+         */
+        $strategy = 'default';
+        if( $strategy != 'default' ){
+            returnMsg(100,'请使用用户自定义新增计时接口');
+        }
         if( empty($_POST['to_id']) ){
             returnMsg(100,'to_id参数不能为空！');
         }
@@ -151,6 +169,15 @@ class ConsultTime extends Controller{
      * $_POST[consult_time_id] 咨询id
      */
     public function delayedDuration(){
+        /**
+         * @var $strategy 延时接口策略
+         * default使用当前接口
+         * user用户自定义接口
+         */
+        $strategy = 'default';
+        if( $strategy != 'default' ){
+            returnMsg(100,'请使用用户自定义咨询延时接口');
+        }
         if( empty($_POST['consult_time_id']) ){
             returnMsg(100,'consult_time_id参数不能为空！');
         }

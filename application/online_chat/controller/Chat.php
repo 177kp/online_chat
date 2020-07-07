@@ -237,4 +237,15 @@ class Chat extends Controller{
         ];
         $this->doLogin();
     }
+    public function logout(){
+        if( empty($_GET['type']) || $_GET['type'] == 'destroy' ){
+            //var_dump($_SESSION);
+            session_destroy();
+            returnMsg(200,'退出登陆成功！');
+        }elseif( $_GET['type'] == 'null' ){
+            //var_dump($_SESSION);
+            session('chat_user',null);
+            returnMsg(200,'退出登陆成功！');
+        }
+    }
 }

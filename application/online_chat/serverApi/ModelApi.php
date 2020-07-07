@@ -2,8 +2,13 @@
 namespace app\online_chat\serverApi;
 use app\online_chat\serverApi\WebsocketServerApi;
 use think\Db;
+/**
+ * 该类局限于使用thinkphp框架下调用；使用其它框架的，请复制代码使用。
+ * 如果在thinkphp框架下调用失败，请复制代码使用。
+ */
 class ModelApi{
     /**
+     * 添加咨询，可用于支付成功后，添加一个计是咨询
      * @param int $uid 用户id
      * @param int $to_id 和谁聊天id
      * @param int $duration 时长
@@ -37,6 +42,7 @@ class ModelApi{
         return $id;
     }
     /**
+     * 延时咨询，可用于支付成功后，添加一个计时咨询
      * @param $uid 用户id
      * @param $consult_time_id 咨询计时id
      * @param $delayed_duration 延时时长
