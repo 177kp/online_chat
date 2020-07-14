@@ -36,11 +36,12 @@ class WebsocketServerApi{
         $res = self::httpGet($params);
         return true;
     }
-    static function customerJoin($uid,$to_id){
+    static function customerJoin($uid,$to_id,$tmp){
         $params = [
             'action'=>'customer/customerJoin',
             'uid'=>$uid,
-            'to_id'=>$to_id
+            'to_id'=>$to_id,
+            'tmp'=>$tmp
         ];
         $res = self::httpGet($params,false);
         return $res;

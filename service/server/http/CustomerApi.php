@@ -34,9 +34,11 @@ class CustomerApi{
         if( empty($get['to_id']) ){
             return httpApiMsg(100,'to_id参数不能为空！');
         }
+        if( !isset($get['tmp']) ){
+            $get['tmp'] = 1;
+        }
         
-        //一个临时用户可能有多个客服端
-        $sessions = Session::getByUid($get['to_id'],Session::USER_TMP);
+        $sessions = Session::getByUid($get['to_id'],$get['tmp']);
         foreach( $sessions as $session ){
             if( $session['to_id'] != "" ){
                 return httpApiMsg(100,'已接入客服了！');

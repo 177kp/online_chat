@@ -99,10 +99,37 @@ class Database{
             $sth->execute([$mid,$params['msg']]);
         }
 
+       
+
         $params['uid'] = (int)$params['uid'];
         $params['to_id'] = (int)$params['to_id'];
         $params['chat_type'] = (int)$params['chat_type'];
         
+        if( $params['chat_type'] == '2' && $params['tmp'] != '0' ){ //客服咨询加临时会话
+            
+            if( $params['tmp'] == '1' ){
+                $key = $params['uid'] . '-' . $params['chat_type'] . '-tmp' ;
+            }elseif( $params['tmp'] == '2' ){
+                $key = $params['to_id'] . '-' . $params['chat_type'] . '-tmp' ;
+            }
+            if( !isset($chat_sessions[$key]) ){
+                if( $params['tmp'] == '1' ){
+                    $sql = 'select sid from chat_tmp_session
+                                where chat_type=' . $params['chat_type'] . ' and to_id=' . $params['uid'] . ' and soft_delete=0';
+                }elseif( $params['tmp'] == '2' ){
+                    $sql = 'select sid from chat_tmp_session
+                                where chat_type=' . $params['chat_type'] . ' and to_id=' . $params['to_id'] . ' and soft_delete=0';
+                }
+                $chat_session = $dbConn->query($sql)->fetch();
+                if( empty($chat_session) ){
+                    return;
+                }
+                $chat_sessions[$key] = $chat_session['sid'];
+            }
+            $sql = 'update chat_tmp_session set last_time=' . time() . ',last_msg_uuid="'.$uuid.'" where sid=' . $chat_sessions[$key];
+            $dbConn->exec($sql);
+            return;
+        }
 
         $key = $params['uid'] . '-' . $params['to_id'] . '-' . $params['chat_type'];
 

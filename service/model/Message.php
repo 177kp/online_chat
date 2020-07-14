@@ -181,10 +181,11 @@ class Message{
     }
     /**
      * 生成客服加入的广播消息
-     * @param int $uid 用户id
-     * @param string $chat_type 聊天类型
+     * @param int $uid 客服id
+     * @param string $to 用户id
+     * @param string $tmp 是否是临时用户
      */
-    static function genCustomerJoin($uid,$to_id=''){
+    static function genCustomerJoin($uid,$to_id='',$tmp=1){
         return [
             'topic'=>'customer_join',
             'msg'=>[
@@ -193,6 +194,7 @@ class Message{
                 'msg'=>'客服接入',
                 'to_id'=>$to_id,
                 'msg_type'=>0,
+                'tmp'=>$tmp,
                 'ctime'=>time()
             ]
         ];

@@ -39,46 +39,89 @@ class Message{
         $start = ($page - 1) * $pageNum;
 
         $to_id = (int)$_GET['to_id'];
+
+        if( $_GET['chat_type'] == '1' ){
+            //判断用户是否加入了群聊
+            $chat_session = db::table('chat_session')->where('uid',$uid)->where('to_id',$_GET['to_id'])->where('chat_type=1 and soft_delete=0')->find();
+            if( empty($chat_session) ){
+                returnMsg(100,'to_id不正确！');
+            }
+        }
+
         db::query('set names utf8mb4');
         if( $_GET['chat_type'] == '0' ){
-            $sql = 'select a.mid,a.uid,b.name,b.head_img,chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
-                        left join chat_user b on a.uid=b.uid 
-                        where ( a.chat_type = 0 and a.uid=' . $uid . ' and a.to_id=' . $to_id . ' and (a.soft_delete=0 or a.soft_delete = '.$to_id.') ) or
-                         ( a.chat_type = 0 and a.uid=' . $to_id .' and  a.to_id=' . $uid . ' and (a.soft_delete=0 or a.soft_delete = '.$to_id.') ) 
-                            order by a.mid desc limit ' . $start.','.$pageNum;
+            $sql = 'select mid,uid,tmp,chat_type,to_id,msg_type,msg,ctime from chat_message
+                        where ( chat_type = 0 and uid=' . $uid . ' and to_id=' . $to_id . ' and (soft_delete=0 or soft_delete = '.$to_id.') ) or
+                         ( chat_type = 0 and uid=' . $to_id .' and  to_id=' . $uid . ' and (soft_delete=0 or soft_delete = '.$to_id.') ) 
+                            order by mid desc limit ' . $start.','.$pageNum;
             $messages = db::query($sql);
         }elseif( $_GET['chat_type'] == '1' ){
-            $sql = 'select a.mid,a.uid,b.name,b.head_img,chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
-                        left join chat_user b on a.uid=b.uid 
-                        where (a.chat_type = 1 and a.to_id=' .$to_id. ')  order by a.mid desc limit ' . $start.','.$pageNum;
+            $sql = 'select mid,uid,tmp,chat_type,to_id,msg_type,msg,ctime from chat_message 
+                        where (chat_type = 1 and to_id=' .$to_id. ')  order by mid desc limit ' . $start.','.$pageNum;
                         $messages = db::query($sql);
         }elseif( $_GET['chat_type'] == '2' ){
-            //临时用户uid
-            if( session('chat_user.tmp') == '1' ){
+            /**
+             * @var $tmp 是否是临时会话
+             */
+            if( !isset($_GET['tmp']) ){
+                $tmp = 1;
+            }else{
+                $tmp = $_GET['tmp'];
+            }
+            //用户uid
+            if( session('chat_user.tmp') == '1' || session('chat_user.user_type') != '1' ){
                 $id = getUid();
             }else{
                 $id = $to_id;
             }
-            $sql = 'select a.mid,a.uid,b.name,b.head_img,chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
-                        left join chat_user b on a.uid=b.uid 
-                        where ( a.chat_type = 2 and a.uid=' . $id . ' and tmp=1 ) or
-                        ( a.chat_type = 2  and  a.to_id=' . $id .' and tmp=0 ) order by a.mid desc limit ' . $start.','.$pageNum;
-            
+            if( $tmp == 0 ){
+                $sql = 'select mid,uid,tmp,chat_type,to_id,msg_type,msg,ctime,tmp from chat_message
+                            where ( chat_type = 2 and uid=' . $id . ' and tmp=0 ) or
+                            ( chat_type = 2  and  to_id=' . $id .' and tmp=0 ) order by mid desc limit ' . $start.','.$pageNum;
+            }else{
+                $sql = 'select mid,uid,tmp,chat_type,to_id,msg_type,msg,ctime from chat_message
+                            where ( chat_type = 2 and uid=' . $id . ' and tmp=1 ) or
+                            ( chat_type = 2  and  to_id=' . $id .' and tmp=2 ) order by mid desc limit ' . $start.','.$pageNum;
+            }
             //echo $sql;exit;
             $messages = db::query($sql);
         }elseif( $_GET['chat_type'] == '3' ){
-            $sql = 'select a.mid,a.uid,b.name,b.head_img,3 as chat_type,to_id,a.msg_type,a.msg,a.ctime from chat_message a 
-                        left join chat_user b on a.uid=b.uid 
-                        where ( a.chat_type = 3 and a.uid=' . $uid . ' and a.to_id=' . $to_id . ' and (a.soft_delete=0 or a.soft_delete = '.$to_id.') ) or
-                         ( a.chat_type = 3 and a.uid=' . $to_id .' and  a.to_id=' . $uid .' and (a.soft_delete=0 or a.soft_delete = '.$to_id.') ) 
-                         order by a.mid desc limit ' . $start.','.$pageNum;
+            $sql = 'select mid,uid,tmp,chat_type,to_id,msg_type,msg,ctime from chat_message
+                        where ( chat_type = 3 and uid=' . $uid . ' and to_id=' . $to_id . ' and (soft_delete=0 or soft_delete = '.$to_id.') ) or
+                         ( chat_type = 3 and uid=' . $to_id .' and to_id=' . $uid .' and (soft_delete=0 or soft_delete = '.$to_id.') ) 
+                         order by mid desc limit ' . $start.','.$pageNum;
             //echo $sql;exit;
             $messages = db::query($sql);
         }
         $mids = [];
+        $uids = [];
         foreach( $messages as $message ){
-            if( $message['msg'] === '' ){
+            if( $message['msg'] === '' ){ //大文本
                 $mids[] = $message['mid'];
+            }
+            if( $message['tmp'] == 0 || $message['tmp'] == '2' ){
+                $uids[] = $message['uid'];
+            }
+        }
+        if( !empty($uids) ){
+            $users = db::table('chat_user')->field('uid,name,head_img')->where('uid','in',$uids)->where('soft_delete=0')->select();
+            $arr = [];
+            foreach( $users as $user ){
+                $arr[$user['uid']] = $user;
+            }
+            foreach( $messages as $k=>$message ){
+                if( $message['tmp'] == 0 || $message['tmp'] == '2' ){
+                    if( isset($arr[$message['uid']]) ){
+                        $messages[$k]['name'] = $arr[$message['uid']]['name'];
+                        $messages[$k]['head_img'] = $arr[$message['uid']]['head_img'];
+                    }else{
+                        $messages[$k]['name'] = '';
+                        $messages[$k]['head_img'] = '';
+                    }
+                }else{
+                    $messages[$k]['name'] = '';
+                    $messages[$k]['head_img'] = '';
+                }
             }
         }
         if( !empty($mids) ){

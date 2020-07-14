@@ -106,7 +106,12 @@ class OnMessage{
         }
     }
     static function Customer($session,$Connection,$recvMsg){
-        $msg = MessageModel::genMessage($session['uid'],Session::CHAT_TYPE_CUSTOMER,$recvMsg['to_id'],$recvMsg['msg_type'],$recvMsg['msg'],null,$session['tmp']);
+        if( isset($recvMsg['tmp']) ){
+            $msgTmp = $recvMsg['tmp'];
+        }else{ //老版本代码，保留
+            $msgTmp = $session['tmp'];
+        }
+        $msg = MessageModel::genMessage($session['uid'],Session::CHAT_TYPE_CUSTOMER,$recvMsg['to_id'],$recvMsg['msg_type'],$recvMsg['msg'],null,$msgTmp);
         //加上发送消息人的头像和名称
         $msg['msg']['head_img'] = $session['head_img'];
         if( $session['tmp'] == Session::USER_TMP ){
@@ -119,10 +124,15 @@ class OnMessage{
         Session::writeFrameByUid($session['uid'],$session['tmp'],$msg);
         //var_export($recvMsg);
         if( $recvMsg['to_id'] != '' ){
-            if( $session['tmp'] == Session::USER_NORMAL ){
-                $tmp = Session::USER_TMP;
+            if( isset($recvMsg['tmp']) ){
+                $tmp = $recvMsg['tmp'];
             }else{
-                $tmp = Session::USER_NORMAL;
+                //老代码保留，兼容老客户端
+                if( $session['tmp'] == Session::USER_NORMAL ){
+                    $tmp = Session::USER_TMP;
+                }else{
+                    $tmp = Session::USER_NORMAL;
+                }
             }
             //var_export($tmp);
             //推送通知给聊天的人

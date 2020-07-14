@@ -23,22 +23,13 @@ class Chat extends Controller{
         $sql = 'update chat_user set online=1,last_heartbeat_time=unix_timestamp() where uid=' . session('chat_user.uid');
         db::query($sql);
         */
-        if( isset($_GET['chat_type']) ){
-            $chat_type = $_GET['chat_type'];
-        }elseif( $user['user_type'] == '0' ){
-            $chat_type = 0;
-        }elseif( $user['user_type'] == '1' ){
-            $chat_type = 2;
-        }elseif( $user['user_type'] == '2' ){
-            $chat_type = 3;
-        }
         
-        $sessions = db::table('chat_session')->where('chat_type',$chat_type)->where('uid',session('chat_user.uid'))->field('to_id,chat_type,0 as tmp')->select();
+        $sessions = db::table('chat_session')->where('uid',session('chat_user.uid'))->where('soft_delete=0')->field('to_id,chat_type,0 as tmp')->select();
         
         //$session_uids = [];
         //var_dump($session_uids);exit;
         try{
-            $time1 =  microtime(true) ;
+            //$time1 =  microtime(true) ;
             $access_token = WebsocketServerApi::get_access_token($user['uid'],$user['user_type'],$user['name'],$user['head_img'],$sessions);
         }catch( \exception $e ){
             returnMsg(100,'websocket服务未启动！');
@@ -119,6 +110,13 @@ class Chat extends Controller{
     }
     /**
      * 登录
+     * 在接入应用登陆成功之后，用js_sdk调用该方法
+     * $_POST[app_uid] 应用的uid
+     * $_POST[name] 昵称
+     * $_POST[head_img] 头像
+     * $_POST[user_type] 用户类型
+     * $_POST[time] 当前时间戳;签名验证会用到，相差不能超过30s
+     * 
      */
     public function doLogin(){
         if( empty($_POST['app_uid']) ){
@@ -177,18 +175,18 @@ class Chat extends Controller{
             }
             $uid = db::table('chat_user')->insertGetId([
                 'uid'=>$uid,
-                'name'=>$_POST['name'],
-                'head_img'=>$_POST['head_img'],
+                'name'=>Request::post('name'),
+                'head_img'=>Request::post('head_img'),
                 'online'=>1,
                 'last_login_time'=>time(),
                 'last_heartbeat_time'=>time(),
-                'user_type'=>$user_type,
-                'app_uid'=>$_POST['app_uid']
+                'user_type'=>(int)$user_type,
+                'app_uid'=>Request::post('app_uid')
             ]);
         }else{
             db::table('chat_user')->where('app_uid',$_POST['app_uid'])->update([
-                'name'=>$_POST['name'],
-                'head_img'=>$_POST['head_img'],
+                'name'=>Request::post('name'),
+                'head_img'=>Request::post('head_img'),
                 'online'=>1,
                 'last_login_time'=>time(),
                 'last_heartbeat_time'=>time(),
@@ -198,8 +196,8 @@ class Chat extends Controller{
         session('chat_user',[
             'uid'=>$uid,
             'user_type'=>$user_type,
-            'name'=>$_POST['name'],
-            'head_img'=>$_POST['head_img']    
+            'name'=>Request::post('name'),
+            'head_img'=>Request::post('head_img')    
         ]);
         
         //var_dump($_SESSION);
@@ -208,6 +206,13 @@ class Chat extends Controller{
             'PHPSESSID'=>session_id()
         ]);
     }
+    /**
+     * 小程序登陆
+     * 该接口只作为演示例子；已有的小程序，登陆之后直接调用/index.php/online_chat/chat/doLogin接口;
+     * $_GET[code] 微信小程序登陆的code
+     * $_GET[name] 昵称
+     * $_GET[head_img] 头像
+     */
     public function wxMiniProgramLogin(){
         if( !isset($_GET['code']) ){
             returnMsg(100,'code不能为空！');
@@ -235,8 +240,17 @@ class Chat extends Controller{
             'time'=>time(),
             'app_uid'=>$resArr['openid']
         ];
+        Request::withPost($_POST);
+        config('chat.enable_sign',false);
         $this->doLogin();
     }
+    /**
+     * 退出登陆
+     * 接入的系统在退出登陆之后，需要调用该接口
+     * $_GET[type] 类型
+     * destroy 销毁session
+     * 'null'字符串 session('chat_user',null)
+     */
     public function logout(){
         if( empty($_GET['type']) || $_GET['type'] == 'destroy' ){
             //var_dump($_SESSION);

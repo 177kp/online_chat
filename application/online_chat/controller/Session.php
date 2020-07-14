@@ -10,6 +10,7 @@ class Session{
      * $_GET[pagaeNum] 不必须；每页数量；最大500
      * $_GET[type] 不必须；是all代表所有会话，分页无效
      * $_GET[chat_types] 不必须；指定聊天类型；有type=all则无效
+     * 会话列表有最大数量的限制
      */
     public function index(){
         isLogin();
@@ -43,7 +44,14 @@ class Session{
          * 没有$_GET[chat_types]则取当前用户类型的默认chat_type
          */
         if( isset($_GET['type']) && $_GET['type'] == 'all' ){
-            $sql = 'select uid,chat_type,to_id,last_time,last_msg_uuid from chat_session where soft_delete=0 and uid=' . $uid;
+            if( session('chat_user.user_type') == '1' ){ //用户类型是客服，需要查询临时会话表
+                $sql = '(select uid,chat_type,to_id,last_time,last_msg_uuid,0 as tmp from chat_session 
+                            where soft_delete=0 and uid=' . $uid . ' limit '.$maxSessionNum.') union all 
+                        (select uid,chat_type,to_id,last_time,last_msg_uuid,1 as tmp from chat_tmp_session 
+                            where soft_delete=0 and uid=' . $uid . ' limit '.$maxSessionNum . ')';
+            }else{
+                $sql = 'select uid,chat_type,to_id,last_time,last_msg_uuid,0 as tmp from chat_session where soft_delete=0 and uid=' . $uid;
+            }
             $sql .= ' order by last_time desc limit 0,' . $maxSessionNum;
             $start = 0;
             $pageNum = $maxSessionNum;
@@ -73,13 +81,23 @@ class Session{
             foreach( $chat_types as $chat_type ){
                 $sqlParts[] = 'chat_type='.$chat_type;
             }
-            $sql = 'select uid,chat_type,to_id,last_time,last_msg_uuid from chat_session where soft_delete=0 and uid=' . $uid . ' and (' . implode(' or ',$sqlParts) . ')';
+            if( in_array(2,$chat_types) ){ //有客服聊天，需要查询临时会话表
+                $sql = '(select uid,chat_type,to_id,last_time,last_msg_uuid,0 as tmp from chat_session 
+                            where soft_delete=0 and uid=' . $uid . ' and (' . implode(' or ',$sqlParts) . ') limit ' . $maxSessionNum . ') union all 
+                        (select uid,chat_type,to_id,last_time,last_msg_uuid,1 as tmp from chat_tmp_session 
+                            where soft_delete=0 and uid=' . $uid . ' limit ' . $maxSessionNum . ')';
+            }else{
+                $sql = 'select uid,chat_type,to_id,last_time,last_msg_uuid,0 as tmp from chat_session 
+                            where soft_delete=0 and uid=' . $uid . ' and (' . implode(' or ',$sqlParts) . ')';
+            }
+            
             if( in_array(1,$chat_types) ){
                 $sql .= ' order by last_time desc limit 0,' . $maxSessionNum;
             }else{
                 $sql .= ' order by last_time desc limit ' . $start . ',' . $pageNum;
             }
         }
+        
         //echo $sql;exit;
         //查询会话列表
         $sessions = db::query($sql);
@@ -146,7 +164,12 @@ class Session{
                     $uids[] = $session['last_uid'];
                 }
             }else if( $session['chat_type'] == '2' ){
-                $tmpUids[] = $session['to_id'];
+                if( $session['tmp'] == '0' ){
+                    $uids[] = $session['to_id'];
+                }else{
+                    $tmpUids[] = $session['to_id'];
+                }
+                
             }
             if( !empty($session['last_msg_uuid']) ){
                 $uuids[] = $session['last_msg_uuid'];
@@ -161,7 +184,7 @@ class Session{
                 $arr[$user['uid']] = $user;
             }
             foreach( $sessions as $k=>$session ){
-                if( $session['chat_type'] == '0' || $session['chat_type'] == '3' ){
+                if( $session['chat_type'] == '0' || $session['chat_type'] == '3' || ($session['chat_type'] == '2' && $session['tmp'] == '0') ){
                     if( isset($arr[$session['to_id']]) ){
                         $sessions[$k]['online'] = $arr[$session['to_id']]['online'];
                         $sessions[$k]['head_img'] = $arr[$session['to_id']]['head_img'];
@@ -180,7 +203,7 @@ class Session{
                 $arr[$user['uid']] = $user;
             }
             foreach( $sessions as $k=>$session ){
-                if( $session['chat_type'] == '2' ){
+                if( $session['chat_type'] == '2' && $session['tmp'] == '1' ){
                     if( isset($arr[$session['to_id']]) ){
                         $sessions[$k]['online'] = $arr[$session['to_id']]['online'];
                         $sessions[$k]['head_img'] = '';
@@ -462,11 +485,25 @@ class Session{
             if( session('chat_user.user_type') != 1 ){
                 returnMsg(100,'当前用户类型不正确！');
             }
-            $user = db::table('chat_tmp_user')->where('uid',$_GET['to_id'])->find();
-            if( empty($user) ){
-                returnMsg(100,'to_id不正确！');
+            //兼容老版本没有tmp参数
+            if( !isset($_GET['tmp']) ){
+                $_GET['tmp'] = 1;
             }
-            $res = WebsocketServerApi::customerJoin(getUid(),$_GET['to_id']);
+            if( !in_array($_GET['tmp'],['0','1']) ){
+                returnMsg(100,'tmp参数不正确！');
+            }
+            if( $_GET['tmp'] ==  '1' ){
+                $user = db::table('chat_tmp_user')->where('uid',$_GET['to_id'])->find();
+                if( empty($user) ){
+                    returnMsg(100,'to_id不正确！');
+                }
+            }else{
+                $user = db::table('chat_user')->where('uid',$_GET['to_id'])->where('soft_delete=0')->find();
+                if( empty($user) ){
+                    returnMsg(100,'to_id不正确！');
+                }
+            }
+            $res = WebsocketServerApi::customerJoin(getUid(),$_GET['to_id'],$_GET['tmp']);
             if( $res['code'] != 200 ){
                 returnMsg($res['code'],$res['msg']);
             }
@@ -484,8 +521,13 @@ class Session{
             }
             $online = $user['online'];
         }
-        $sql = 'insert ignore into chat_session(sid,uid,to_id,chat_type,last_time)
+        if( $_GET['chat_type'] == '2' && isset($_GET['tmp']) && $_GET['tmp'] == '1' ){
+            $sql = 'insert ignore into chat_tmp_session(sid,uid,to_id,chat_type,last_time)
                         values(null,?,?,?,unix_timestamp());';
+        }else{
+            $sql = 'insert ignore into chat_session(sid,uid,to_id,chat_type,last_time)
+                        values(null,?,?,?,unix_timestamp());';
+        }
         db::query($sql,[getUid(),$_GET['to_id'],$_GET['chat_type']]);
        
         returnMsg(200,'加入session成功！',[
