@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS `chat_mail_list` (
 CREATE TABLE IF NOT EXISTS `chat_message` (
   `mid` bigint(20) NOT NULL AUTO_INCREMENT,
   `uid` int(11) NOT NULL DEFAULT '0' COMMENT '用户id',
-  `tmp` tinyint(1) DEFAULT '0' COMMENT '发送消息的人，是否是临时用户；该字段是客户聊天有用；0-不是，1-是',
+  `tmp` tinyint(1) DEFAULT '0' COMMENT '0-发送消息和接收消息都不是临时用户，1-发送消息是临时用户，2-接收消息是临时用户',
   `chat_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '聊天类型，0-普通聊天，1-聊天室，2-客服，3-咨询',
   `to_id` int(11) NOT NULL DEFAULT '0' COMMENT '发给谁的id，可以是uid,rid',
   `msg_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0-文本，1-图片，2-语音，3-视频，4-富文本，5-文件，10-客服欢迎消息',
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS `chat_message` (
   UNIQUE KEY `uuid` (`uuid`),
   KEY `chat_type` (`uid`,`chat_type`,`to_id`),
   KEY `chat_type_2` (`to_id`,`chat_type`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COMMENT='用户一对一聊天消息' AUTO_INCREMENT=1507 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COMMENT='用户一对一聊天消息' AUTO_INCREMENT=1566 ;
 
 -- --------------------------------------------------------
 
@@ -141,6 +141,24 @@ CREATE TABLE IF NOT EXISTS `chat_session` (
   PRIMARY KEY (`sid`),
   UNIQUE KEY `uid` (`soft_delete`,`uid`,`chat_type`,`to_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='聊天列表' AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `chat_tmp_session`
+--
+
+CREATE TABLE IF NOT EXISTS `chat_tmp_session` (
+  `sid` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` int(11) NOT NULL DEFAULT '0' COMMENT '用户id，客服id',
+  `chat_type` tinyint(1) NOT NULL DEFAULT '0' COMMENT '2-客服',
+  `to_id` int(11) NOT NULL DEFAULT '0' COMMENT '临时用户id',
+  `last_time` int(11) NOT NULL DEFAULT '0' COMMENT '最近更新的时间',
+  `last_msg_uuid` char(32) DEFAULT '0' COMMENT '最近消息的uuid',
+  `soft_delete` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '软删除，0-正常，其他-代表已删除（删除的时间戳）',
+  PRIMARY KEY (`sid`),
+  UNIQUE KEY `chat-session-unique` (`uid`,`chat_type`,`to_id`,`soft_delete`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ROW_FORMAT=COMPACT COMMENT='聊天列表' AUTO_INCREMENT=4 ;
 
 -- --------------------------------------------------------
 
